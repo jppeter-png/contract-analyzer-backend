@@ -136,13 +136,22 @@ Covers `piiScrubber.js` regex edge cases (phone numbers that look like SSNs, int
 
 ## Evaluation
 
-`eval/` contains a hand-labeled set of 22 contracts (18 across all six categories with known trap clauses, 4 clean with none) and a scoring script that computes trap-clause recall and issue-level precision/recall against ground truth, compared against a naive keyword-matching baseline. See [`eval/results.md`](eval/results.md) for the latest run and full methodology/caveats.
+`eval/` contains a hand-labeled dataset of 30 contracts (`dataset.json` — 25 across all six categories with known trap clauses, 5 clean with none) and a scoring script (`run_eval.js`) that runs both the real analyzer and a naive keyword baseline (`keywordBaseline.js`, fixed red-flag terms per category, no LLM) against every entry, scores each with a rough category-or-text-overlap matcher (`scoring.js`, not exact string match), and computes per-category precision/recall/F1 plus the false-positive rate on the clean entries. See [`eval/results.md`](eval/results.md) for the latest run, an error-analysis section with concrete misses/false-positives, and full methodology/caveats.
 
 ```bash
 npm run eval
 ```
 
-Requires a real `GROQ_API_KEY` — this hits the live API (~22 calls, paced to stay under free-tier rate limits, so it takes a few minutes).
+Requires a real `GROQ_API_KEY` — this hits the live API (~30 calls, paced to stay under free-tier rate limits, so it takes several minutes and can bump into the daily token quota on a busy day). Add `--resume` to reuse successful results from `eval/predictions.json` (gitignored, written each run) instead of re-calling the API for entries already captured — useful for picking back up after a rate-limit interruption without burning extra budget.
+
+### Results (last run 2026-09-07)
+
+| Approach | Precision | Recall | F1 |
+|---|---|---|---|
+| LLM (this app) | 0.73 | 0.91 | **0.81** |
+| Keyword baseline | 0.73 | 0.86 | 0.79 |
+
+Headline F1 is close — but the more telling number is false-positive control on the 5 clean (no-trap) contracts: the category-tuned keyword baseline flagged **4 of 5** of them, while the LLM falsely flagged only **1 of 5**. A naive keyword scanner catches real traps almost as often as the LLM here, but it can't tell a red-flag *word* from a red-flag *clause* — it fires on "arbitration" or "indefinitely" appearing at all, regardless of context. Full breakdown, per-category numbers, and concrete error examples in [`eval/results.md`](eval/results.md).
 
 ---
 
