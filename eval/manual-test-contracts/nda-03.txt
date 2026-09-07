@@ -1,0 +1,11 @@
+CONFIDENTIALITY AGREEMENT
+
+Between Pinecrest Health Systems and Vendor.
+
+Vendor agrees to maintain the confidentiality of all Company information disclosed under this engagement for a period of 4 years.
+
+Liquidated Damages: Any breach of this Agreement, regardless of whether actual harm can be shown, entitles Company to liquidated damages of $250,000 per incident, in addition to any other remedies available at law.
+
+Governing Law: This Agreement is governed by the laws of a jurisdiction to be selected by Company at its sole discretion at the time any dispute arises.
+
+Assignment: Company may assign this Agreement, and all of Vendor's confidentiality obligations under it, to any third party at any time without Vendor's consent.

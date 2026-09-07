@@ -50,9 +50,13 @@ backend/
 ├── package.json
 ├── test/                     # Jest unit + integration tests
 ├── eval/                     # Labeled eval set + scoring script (see "Evaluation" below)
-│   ├── fixtures/              # Labeled contract eval set
-│   ├── run.js                 # Scoring script (precision/recall vs. ground truth)
-│   └── results.md             # Latest eval run, committed for reference
+│   ├── dataset.json            # 30 hand-labeled contracts (ground truth)
+│   ├── keywordBaseline.js      # Naive keyword baseline (comparison point)
+│   ├── scoring.js              # Category/text-overlap matching + P/R/F1
+│   ├── run_eval.js             # Orchestrates a run, regenerates results.md
+│   ├── results.md              # Latest eval run, committed for reference
+│   ├── predictions.json        # Raw per-entry output from the latest run (gitignored)
+│   └── manual-test-contracts/  # Same 30 contracts as standalone .txt files, for trying by hand
 └── src/
     ├── piiScrubber.js        # Regex + NLP-based PII redaction
     ├── textExtractor.js      # PDF / DOCX / TXT parsing
@@ -143,6 +147,8 @@ npm run eval
 ```
 
 Requires a real `GROQ_API_KEY` — this hits the live API (~30 calls, paced to stay under free-tier rate limits, so it takes several minutes and can bump into the daily token quota on a busy day). Add `--resume` to reuse successful results from `eval/predictions.json` (gitignored, written each run) instead of re-calling the API for entries already captured — useful for picking back up after a rate-limit interruption without burning extra budget.
+
+Want to try the same 30 contracts yourself, by hand, in the app? See [`eval/manual-test-contracts/`](eval/manual-test-contracts/) — each one exported as a standalone `.txt` file plus a short "here's what a correct analysis should find" writeup.
 
 ### Results (last run 2026-09-07)
 

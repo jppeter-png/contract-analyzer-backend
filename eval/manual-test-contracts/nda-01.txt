@@ -1,0 +1,11 @@
+MUTUAL NON-DISCLOSURE AGREEMENT
+
+Between Vertex Analytics ("Disclosing Party") and Recipient.
+
+1. Confidential Information means any and all information disclosed by Disclosing Party, in any form, including information that is publicly known, information Recipient already possessed prior to disclosure, and information independently developed by Recipient.
+
+2. Term. The obligations of confidentiality under this Agreement shall survive in perpetuity and have no expiration date.
+
+3. Obligations. Recipient shall not disclose or use Confidential Information for any purpose other than evaluating a potential business relationship.
+
+4. Remedies. Any breach entitles Disclosing Party to seek injunctive relief and monetary damages as available under applicable law.

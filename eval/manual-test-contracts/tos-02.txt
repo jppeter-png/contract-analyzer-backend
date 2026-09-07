@@ -1,0 +1,9 @@
+PRIVACY POLICY & TERMS
+
+Welcome to Halcyon Fitness App.
+
+Data Collection: We collect your location data continuously, even when the app is not in use, and share this data with "marketing partners" without specifying who those partners are or how they will use the data.
+
+Cancellation: Subscriptions renew automatically. To cancel, you must call our support line during specific business hours and provide 30 days' advance notice; email or in-app cancellation is not available.
+
+Account Data Export: Users may request a full export of their workout and account data in a standard format (CSV or JSON) at any time, free of charge.
