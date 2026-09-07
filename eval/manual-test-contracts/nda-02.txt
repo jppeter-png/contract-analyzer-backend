@@ -1,0 +1,11 @@
+NON-DISCLOSURE AGREEMENT
+
+Between Sable Robotics Inc. and Contractor.
+
+Contractor acknowledges that all information shared by Sable Robotics is proprietary and confidential and agrees not to disclose it to any third party for a period of 3 years from the date of disclosure.
+
+Non-Solicitation: During the engagement and for 18 months thereafter, Contractor shall not solicit for employment any individual who was an employee of Sable Robotics at the time of the engagement.
+
+Reciprocity: This Agreement imposes confidentiality obligations on Contractor only; Sable Robotics may use or disclose any information Contractor shares during the engagement without restriction.
+
+Return of Materials: Upon request, Contractor shall return or destroy all Confidential Information within 15 days.

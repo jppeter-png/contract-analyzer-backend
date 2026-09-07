@@ -1,0 +1,13 @@
+EMPLOYMENT AGREEMENT
+
+This Employment Agreement is entered into between Northwind Software Inc. ("Company") and the Employee.
+
+1. Position and Duties. Employee will serve as Senior Software Engineer, reporting to the VP of Engineering.
+
+2. Compensation. Employee will receive an annual base salary of $145,000, paid bi-weekly, plus eligibility for an annual bonus at Company's sole discretion.
+
+3. Intellectual Property. Employee agrees that any invention, work of authorship, or idea conceived by Employee at any time during the term of employment, whether or not during working hours or using Company resources, and whether or not related to Company's business, shall be the sole and exclusive property of the Company.
+
+4. Dispute Resolution. Any dispute arising out of or relating to this Agreement, including claims of discrimination or wrongful termination, shall be resolved exclusively through binding arbitration administered by an arbitrator selected by the Company. Employee waives any right to a jury trial or to participate in a class or collective action.
+
+5. At-Will Employment. Employment is at-will and may be terminated by either party at any time, with or without cause or notice.

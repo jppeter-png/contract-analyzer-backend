@@ -1,0 +1,11 @@
+SOFTWARE DEVELOPMENT AGREEMENT
+
+Between Bluefin Digital ("Agency") and Client.
+
+Intellectual Property: All work product, including any pre-existing tools, libraries, and frameworks owned by Agency and incorporated into the deliverables, shall become the sole property of Client upon payment, with no license retained by Agency even for its own reusable components.
+
+Change Orders: Any changes to project scope requested by Client shall be performed by Agency at no additional cost, regardless of the scope or time required.
+
+Warranty: Agency warrants the software will be "generally functional" for a period of 90 days, and disclaims all other warranties including fitness for a particular purpose.
+
+Payment Schedule: 50% due at signing, 50% due upon delivery.
