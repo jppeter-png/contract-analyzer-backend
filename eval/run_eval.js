@@ -136,6 +136,22 @@ function truncate(s, n) {
   return s.length > n ? s.slice(0, n - 1) + '…' : s;
 }
 
+/**
+ * Best-effort, generic commentary on why a baseline keyword match on a clean
+ * doc is a false positive — not hardcoded to specific snippets (so it still
+ * makes sense on a future dataset), just a cheap negation-word heuristic.
+ * Always paired with the real snippet in the report so the reader can judge
+ * for themselves regardless of whether this heuristic nails it.
+ */
+function baselineFpCommentary(snippet) {
+  const lower = (snippet || '').toLowerCase();
+  const negationSignals = ['none', 'no ', 'not mandatory', 'optional', 'is not', 'shall not', "isn't", 'excluding', 'except', 'only for its own'];
+  if (negationSignals.some(sig => lower.includes(sig))) {
+    return 'the surrounding text appears to negate, limit, or make optional the very thing the matched term usually signals a risk about — the baseline can\'t tell a clause ruling something out from one establishing it.';
+  }
+  return 'the term appears in what reads as a standard/balanced clause here — its mere presence doesn\'t make the clause unfair, but a keyword scanner has no way to tell.';
+}
+
 async function main() {
   if (!process.env.GROQ_API_KEY) {
     console.error('GROQ_API_KEY is not set (checked backend/.env). Aborting.');
@@ -170,49 +186,53 @@ async function main() {
 
   for (const entry of dataset) {
     const cached = previousById.get(entry.id);
+    let llmIssues, llmComparableIssues, llmScore, llmOverallRisk, error, truncatedForLLM;
+
     if (cached) {
-      console.log(`${entry.id}: reusing previous result.`);
-      perDoc.push(cached);
-      continue;
+      console.log(`${entry.id}: reusing previous LLM result.`);
+      ({ llmIssues, llmComparableIssues, llmScore, llmOverallRisk, error, truncatedForLLM } = cached);
+    } else {
+      process.stdout.write(`Analyzing ${entry.id}... `);
+
+      const systemPrompt = analyzeRouter.PROMPTS[entry.category] || analyzeRouter.PROMPTS.auto;
+      truncatedForLLM = entry.text.length > analyzeRouter.MAX_INPUT_CHARS;
+      const userContent = `Analyze this contract:\n\n${entry.text.slice(0, analyzeRouter.MAX_INPUT_CHARS)}`;
+
+      let analysis = null;
+      error = null;
+      try {
+        analysis = await callGroqWithRetry(systemPrompt, userContent);
+      } catch (err) {
+        error = err.message;
+      }
+
+      llmIssues = analysis?.issues || [];
+      // This dataset's ground truth is entirely "an unfair clause is present"
+      // traps — it has no missing_protection-style entries. A missing_protection
+      // prediction can therefore never be a true positive here by construction,
+      // so scoring it as an ordinary false positive would unfairly tank
+      // precision for correct behavior the schema explicitly supports. Score
+      // only the comparable subset; missing_protection issues are tallied
+      // separately (see the False Positive Rate section).
+      llmComparableIssues = llmIssues.filter(i => i.type !== 'missing_protection');
+      llmScore = scoreDocument(llmComparableIssues, entry.ground_truth_issues);
+      llmOverallRisk = analysis?.overall_risk ?? null;
+
+      console.log(error ? `ERROR: ${error}` : 'done');
+      await sleep(13000); // stay under the free-tier tokens-per-minute cap
     }
 
-    process.stdout.write(`Analyzing ${entry.id}... `);
-
-    const systemPrompt = analyzeRouter.PROMPTS[entry.category] || analyzeRouter.PROMPTS.auto;
-    const truncatedForLLM = entry.text.length > analyzeRouter.MAX_INPUT_CHARS;
-    const userContent = `Analyze this contract:\n\n${entry.text.slice(0, analyzeRouter.MAX_INPUT_CHARS)}`;
-
-    let analysis = null;
-    let error = null;
-    try {
-      analysis = await callGroqWithRetry(systemPrompt, userContent);
-    } catch (err) {
-      error = err.message;
-    }
-
-    const llmIssues = analysis?.issues || [];
-    // This dataset's ground truth is entirely "an unfair clause is present"
-    // traps — it has no missing_protection-style entries. A missing_protection
-    // prediction can therefore never be a true positive here by construction,
-    // so scoring it as an ordinary false positive would unfairly tank
-    // precision for correct behavior the schema explicitly supports. Score
-    // only the comparable subset; missing_protection issues are tallied
-    // separately (see the False Positive Rate section).
-    const llmComparableIssues = llmIssues.filter(i => i.type !== 'missing_protection');
-    const llmScore = scoreDocument(llmComparableIssues, entry.ground_truth_issues);
-
+    // Baseline is free (no API call) — always recompute fresh, even when
+    // reusing a cached LLM result, so keywordBaseline.js changes take effect
+    // without needing to re-run the expensive part.
     const baselinePreds = runKeywordBaseline(entry.text, entry.category);
     const baselineScore = scoreDocument(baselinePreds, entry.ground_truth_issues);
 
     perDoc.push({
-      entry, error, truncatedForLLM,
-      llmOverallRisk: analysis?.overall_risk ?? null,
+      entry, error, truncatedForLLM, llmOverallRisk,
       llmIssues, llmComparableIssues, llmScore,
       baselinePreds, baselineScore,
     });
-
-    console.log(error ? `ERROR: ${error}` : 'done');
-    await sleep(13000); // stay under the free-tier tokens-per-minute cap
   }
 
   const okDocs = perDoc.filter(d => !d.error);
@@ -247,10 +267,19 @@ async function main() {
   const missingProtectionOnClean = cleanDocs.reduce(
     (s, d) => s + d.llmIssues.filter(i => i.type === 'missing_protection').length, 0
   );
-  const llmFpDescriptions = [];
+  const llmFpDetails = [];
   for (const d of cleanDocs) {
     for (const pi of d.llmScore.falsePositivePredIndices) {
-      llmFpDescriptions.push(`${d.entry.id}: "${truncate(d.llmComparableIssues[pi].title || '', 80)}"`);
+      const pred = d.llmComparableIssues[pi];
+      llmFpDetails.push({ id: d.entry.id, title: pred.title, description: pred.description });
+    }
+  }
+
+  const baselineFpDetails = [];
+  for (const d of cleanDocs) {
+    for (const pi of d.baselineScore.falsePositivePredIndices) {
+      const pred = d.baselinePreds[pi];
+      baselineFpDetails.push({ id: d.entry.id, matchedTerm: pred.matched_term, category: pred.category, snippet: pred.description });
     }
   }
 
@@ -264,8 +293,8 @@ async function main() {
     llmAgg, baselineAgg, byCategory,
     falsePositives: {
       totalClean: cleanDocs.length,
-      llm: { docsWithFp: llmFpDocs, totalFp: llmFpTotal, missingProtectionOnClean, descriptions: llmFpDescriptions },
-      baseline: { docsWithFp: baselineFpDocs, totalFp: baselineFpTotal },
+      llm: { docsWithFp: llmFpDocs, totalFp: llmFpTotal, missingProtectionOnClean, details: llmFpDetails },
+      baseline: { docsWithFp: baselineFpDocs, totalFp: baselineFpTotal, details: baselineFpDetails },
     },
     errorAnalysisLines,
   };
@@ -320,8 +349,28 @@ function renderMarkdown(r) {
   lines.push('');
   lines.push(`- LLM: ${r.falsePositives.llm.docsWithFp}/${r.falsePositives.totalClean} clean contracts had an \`unfair_clause\`-typed prediction that didn't match anything real (${r.falsePositives.llm.totalFp} total — \`missing_protection\`-typed issues are excluded from this count, see below)`);
   lines.push(`- Keyword baseline: ${r.falsePositives.baseline.docsWithFp}/${r.falsePositives.totalClean} clean contracts flagged (${r.falsePositives.baseline.totalFp} total)`);
-  lines.push(`- Any false positives found: ${r.falsePositives.llm.descriptions.length ? r.falsePositives.llm.descriptions.join('; ') : 'none — the LLM raised zero unfair_clause-typed issues across any clean doc'}`);
-  lines.push(`- Separately (not counted above): the LLM raised ${r.falsePositives.llm.missingProtectionOnClean} \`missing_protection\`-typed issues across the clean docs (noting standard clauses are absent) — expected behavior per the schema, not evidence of hallucination. See Methodology.`);
+  lines.push('');
+
+  lines.push(`### LLM false positive${r.falsePositives.llm.details.length === 1 ? '' : 's'} (${r.falsePositives.llm.details.length})`);
+  lines.push('');
+  if (r.falsePositives.llm.details.length === 0) {
+    lines.push('None — the LLM raised zero `unfair_clause`-typed issues across any clean doc.');
+  } else {
+    for (const d of r.falsePositives.llm.details) {
+      lines.push(`- **\`${d.id}\`** — "${d.title}": ${d.description}`);
+    }
+  }
+  lines.push('');
+  lines.push(`Separately (not counted above): the LLM raised ${r.falsePositives.llm.missingProtectionOnClean} \`missing_protection\`-typed issues across the clean docs (noting standard clauses are absent) — expected behavior per the schema, not evidence of hallucination. See Methodology.`);
+  lines.push('');
+
+  lines.push(`### Keyword baseline false positive${r.falsePositives.baseline.details.length === 1 ? '' : 's'} (${r.falsePositives.baseline.details.length})`);
+  lines.push('');
+  lines.push('Concrete illustration of the core limitation of keyword matching — it fires on a *word*, not on what the surrounding clause actually says:');
+  lines.push('');
+  for (const d of r.falsePositives.baseline.details) {
+    lines.push(`- **\`${d.id}\`** matched \`"${d.matchedTerm}"\` (category: ${d.category}) in: "…${d.snippet}…" — ${baselineFpCommentary(d.snippet)}`);
+  }
   lines.push('');
   lines.push('## Error Analysis');
   lines.push('');

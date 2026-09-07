@@ -84,7 +84,9 @@ function runKeywordBaseline(text, category) {
       // Grab a short window of surrounding text as this prediction's "clause_excerpt" stand-in.
       const start = Math.max(0, idx - 60);
       const end = Math.min(text.length, idx + term.length + 60);
-      const snippet = text.slice(start, end).trim();
+      // Collapse whitespace/newlines so this reads as one line in reports
+      // (raw contract text has \n\n between clauses/sections).
+      const snippet = text.slice(start, end).trim().replace(/\s+/g, ' ');
 
       predictions.push({
         category: group.category,
