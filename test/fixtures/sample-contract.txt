@@ -1,0 +1,8 @@
+EMPLOYMENT AGREEMENT
+
+This agreement is entered into between Acme Corp and John Smith (john.smith@example.com, 415-555-2671).
+
+1. At-will employment. Either party may terminate this agreement at any time.
+2. Non-compete. Employee agrees not to work for a competitor within 50 miles for 2 years after termination.
+3. Confidentiality. Employee agrees to keep all company information confidential indefinitely.
+4. Compensation. Employee will be paid $85,000 annually, reviewed yearly.
