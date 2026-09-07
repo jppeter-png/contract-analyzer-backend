@@ -36,8 +36,25 @@ Dataset: `eval/dataset.json` (v1)
 
 - LLM: 1/5 clean contracts had an `unfair_clause`-typed prediction that didn't match anything real (1 total — `missing_protection`-typed issues are excluded from this count, see below)
 - Keyword baseline: 4/5 clean contracts flagged (8 total)
-- Any false positives found: employment-05: "Undefined "cause" for termination"
-- Separately (not counted above): the LLM raised 20 `missing_protection`-typed issues across the clean docs (noting standard clauses are absent) — expected behavior per the schema, not evidence of hallucination. See Methodology.
+
+### LLM false positive (1)
+
+- **`employment-05`** — "Undefined "cause" for termination": The contract provides severance only for termination "without cause" but does not define what constitutes cause, allowing the employer to potentially deny severance arbitrarily.
+
+Separately (not counted above): the LLM raised 20 `missing_protection`-typed issues across the clean docs (noting standard clauses are absent) — expected behavior per the schema, not evidence of hallucination. See Methodology.
+
+### Keyword baseline false positives (8)
+
+Concrete illustration of the core limitation of keyword matching — it fires on a *word*, not on what the surrounding clause actually says:
+
+- **`employment-05`** matched `"non-compete"` (category: non-compete) in: "…ance pay per year of service, up to a maximum of 12 weeks. Non-Compete: None. Employee may work for any employer, including compet…" — the surrounding text appears to negate, limit, or make optional the very thing the matched term usually signals a risk about — the baseline can't tell a clause ruling something out from one establishing it.
+- **`employment-05`** matched `"arbitration"` (category: arbitration) in: "…may pursue claims in court or through voluntary mediation; arbitration is optional, not mandatory, and either party may opt out wi…" — the surrounding text appears to negate, limit, or make optional the very thing the matched term usually signals a risk about — the baseline can't tell a clause ruling something out from one establishing it.
+- **`employment-05`** matched `"intellectual property"` (category: ip-assignment) in: "…dependently developed, or required to be disclosed by law. Intellectual Property: Inventions Employee creates within the scope of employment…" — the term appears in what reads as a standard/balanced clause here — its mere presence doesn't make the clause unfair, but a keyword scanner has no way to tell.
+- **`employment-05`** matched `"at-will"` (category: at-will) in: "…ce metrics shared with Employee at the start of each year. At-Will Employment: Employment is at-will. Either party may termina…" — the term appears in what reads as a standard/balanced clause here — its mere presence doesn't make the clause unfair, but a keyword scanner has no way to tell.
+- **`nda-05`** matched `"independently developed"` (category: overbroad-definition) in: "…ving party, was already known to the receiving party, or is independently developed. Term: Confidentiality obligations last for 3 years from t…" — the term appears in what reads as a standard/balanced clause here — its mere presence doesn't make the clause unfair, but a keyword scanner has no way to tell.
+- **`lease-05`** matched `"structural repairs"` (category: structural-repairs-shifted) in: "…uine emergencies. Maintenance: Landlord is responsible for structural repairs, plumbing, electrical, and HVAC systems. Tenant is responsi…" — the term appears in what reads as a standard/balanced clause here — its mere presence doesn't make the clause unfair, but a keyword scanner has no way to tell.
+- **`service-05`** matched `"total liability"` (category: liability-cap-too-low) in: "…ithin 15 days are deemed accepted. Liability: Each party's total liability is capped at the total fees paid under this Agreement in th…" — the term appears in what reads as a standard/balanced clause here — its mere presence doesn't make the clause unfair, but a keyword scanner has no way to tell.
+- **`service-05`** matched `"indemnify"` (category: one-sided-indemnity) in: "…reach of confidentiality. Indemnification: Each party will indemnify the other only for claims arising from its own negligence o…" — the term appears in what reads as a standard/balanced clause here — its mere presence doesn't make the clause unfair, but a keyword scanner has no way to tell.
 
 ## Error Analysis
 
