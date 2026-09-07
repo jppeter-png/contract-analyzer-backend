@@ -15,6 +15,7 @@ const AnalysisSchema = z.object({
     title: z.string(),
     description: z.string(),
     recommendation: z.string(),
+    type: z.enum(['unfair_clause', 'missing_protection']).optional(),
   })),
   missing_protections: z.array(z.string()),
 });
@@ -30,13 +31,19 @@ const BASE_RULES = `Respond ONLY with valid JSON. No markdown, no code blocks, n
       "category": "issue category",
       "title": "short descriptive title",
       "description": "clear explanation of why this is a risk",
-      "recommendation": "specific action the signing party should take"
+      "recommendation": "specific action the signing party should take",
+      "type": "unfair_clause|missing_protection"
     }
   ],
   "missing_protections": [
     "standard protections that are notably absent"
   ]
-}`;
+}
+
+IMPORTANT — every issue's "type" must be exactly one of two things, and you must not blur them together:
+- "unfair_clause": an actual clause IS present in the text and it disadvantages the signing party (e.g. an overly broad non-compete, a one-sided indemnification clause).
+- "missing_protection": nothing adversarial is present — you're noting that a standard protection is simply absent (e.g. no severance clause, no cap on liability). This is not evidence the contract is unfair, just incomplete; do not let missing_protection issues alone push overall_risk above "medium", and never let them alone justify "high".
+A contract with no unfair_clause issues and only missing_protection issues should generally read as "low" or "medium" overall_risk, not "high" — absence of boilerplate is normal, not alarming.`;
 
 const PROMPTS = {
   auto: `You are an expert legal contract analyst. First identify what type of contract this is, then analyze it thoroughly for risks, loopholes, unfair clauses, and missing protections relevant to that contract type. ${BASE_RULES}`,

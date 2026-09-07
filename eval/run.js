@@ -92,6 +92,8 @@ function scoreLLM(fixture, analysis) {
 
   return {
     issuesRaised: issues.length,
+    unfairClauseIssues: issues.filter(i => i.type !== 'missing_protection').length,
+    missingProtectionIssues: issues.filter(i => i.type === 'missing_protection').length,
     truePositiveIssues: issueIsTruePositive.filter(Boolean).length,
     trapResults,
     trapsDetected: trapResults.filter(t => t.detected).length,
@@ -219,10 +221,22 @@ async function main() {
   const baselineRecallByTrap = baselineAgg.trapsDetected / baselineAgg.actual;
 
   // ---- False positive rate on clean docs ----
+  // "issuesRaised" mixes unfair_clause (an actual bad clause the model
+  // claims is present — a real false positive on a clean doc) with
+  // missing_protection (just noting an absence — expected, not a hallucination).
+  // Reported separately since conflating them was the whole point of adding
+  // the `type` field.
   const cleanDocs = perDoc.filter(d => d.clean && !d.error);
   const llmFP = {
     docsWithAnyIssue: cleanDocs.filter(d => d.llm.issuesRaised > 0).length,
+    docsWithUnfairClauseIssue: cleanDocs.filter(d => d.llm.unfairClauseIssues > 0).length,
     totalIssues: cleanDocs.reduce((s, d) => s + d.llm.issuesRaised, 0),
+    totalUnfairClauseIssues: cleanDocs.reduce((s, d) => s + d.llm.unfairClauseIssues, 0),
+    totalMissingProtectionIssues: cleanDocs.reduce((s, d) => s + d.llm.missingProtectionIssues, 0),
+    overallRiskCounts: cleanDocs.reduce((acc, d) => {
+      acc[d.llmOverallRisk] = (acc[d.llmOverallRisk] || 0) + 1;
+      return acc;
+    }, {}),
     totalDocs: cleanDocs.length,
   };
   const baselineFP = {
@@ -296,10 +310,13 @@ function renderMarkdown(r) {
   lines.push('');
   lines.push('| System | Docs with ≥1 flag | Total flags raised |');
   lines.push('|---|---|---|');
-  lines.push(`| LLM | ${r.falsePositives.llm.docsWithAnyIssue} / ${r.falsePositives.llm.totalDocs} | ${r.falsePositives.llm.totalIssues} |`);
+  lines.push(`| LLM (all issues) | ${r.falsePositives.llm.docsWithAnyIssue} / ${r.falsePositives.llm.totalDocs} | ${r.falsePositives.llm.totalIssues} |`);
+  lines.push(`| LLM (\`unfair_clause\` only) | ${r.falsePositives.llm.docsWithUnfairClauseIssue} / ${r.falsePositives.llm.totalDocs} | ${r.falsePositives.llm.totalUnfairClauseIssues} |`);
   lines.push(`| Keyword baseline | ${r.falsePositives.baseline.docsWithAnyIssue} / ${r.falsePositives.baseline.totalDocs} | ${r.falsePositives.baseline.totalIssues} |`);
   lines.push('');
-  lines.push('**What the LLM actually flags on clean contracts** (manually inspected in `eval/results.json`): not fabricated risky clauses, but real gaps — e.g. "no overtime/exempt classification stated," "missing benefits/equity provisions," "undefined \'cause\' for termination." The system prompt explicitly asks for `missing_protections`, and a short contract will always be missing *something* relative to an exhaustive standard, so a nonzero flag count here is expected behavior, not hallucination. The practical risk is UX, not accuracy: the `overall_risk` field came back `"medium"` (occasionally `"high"`) on every clean contract in this set, which could read as alarming to a non-lawyer user looking at an otherwise fair contract. Consider whether "missing standard clause" issues should be visually distinct from "actively unfair clause" issues in the app, and whether `overall_risk` should weight the two differently.');
+  lines.push(`**\`overall_risk\` on clean contracts**: ${Object.entries(r.falsePositives.llm.overallRiskCounts).map(([risk, n]) => `${n} ${risk}`).join(', ')} — this is the number that actually reaches the user first, so it's the real headline metric for whether the app alarms someone unnecessarily.`);
+  lines.push('');
+  lines.push(`As of this run, every flag the LLM raised on clean contracts was typed \`missing_protection\` (${r.falsePositives.llm.totalMissingProtectionIssues} total) rather than \`unfair_clause\` (${r.falsePositives.llm.totalUnfairClauseIssues} total) — real gaps like "no overtime/exempt classification stated" or "undefined 'cause' for termination," not fabricated risky clauses. The schema now separates the two (\`issue.type\`), the app displays \`missing_protection\` issues with a neutral "Missing protection" label instead of a severity badge and excludes them from the High/Medium/Low counts, and the prompt instructs the model not to let missing-protection-only findings push \`overall_risk\` above "medium". The \`overall_risk\` distribution above is the number to watch on future runs to confirm that instruction is actually holding.`);
   lines.push('');
   lines.push('## Recall by category (traps detected / traps total)');
   lines.push('');

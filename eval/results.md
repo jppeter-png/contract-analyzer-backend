@@ -1,6 +1,6 @@
 # Evaluation Results
 
-Generated: 2026-09-06T20:25:48.126Z
+Generated: 2026-09-07T18:33:12.541Z
 Model: openai/gpt-oss-120b (Groq)
 Fixtures: 22 total — 18 with hand-labeled trap clauses, 4 clean (no traps), spanning all 6 contract categories.
 
@@ -8,7 +8,7 @@ Fixtures: 22 total — 18 with hand-labeled trap clauses, 4 clean (no traps), sp
 
 | System | Traps detected | Traps total | Recall |
 |---|---|---|---|
-| LLM (openai/gpt-oss-120b) | 36 | 36 | **100.0%** |
+| LLM (openai/gpt-oss-120b) | 35 | 36 | **97.2%** |
 | Keyword baseline | 17 | 36 | 47.2% |
 
 ## Precision / Recall / F1
@@ -17,7 +17,7 @@ Precision is issue-level: "of the issues/flags raised, how many corresponded to 
 
 | System | Precision | Recall | F1 |
 |---|---|---|---|
-| LLM | 54.3% | 100.0% | 70.4% |
+| LLM | 55.1% | 97.2% | 70.3% |
 | Keyword baseline | 34.9% | 47.2% | 40.2% |
 
 ## False-positive rate (clean contracts)
@@ -26,10 +26,13 @@ Precision is issue-level: "of the issues/flags raised, how many corresponded to 
 
 | System | Docs with ≥1 flag | Total flags raised |
 |---|---|---|
-| LLM | 4 / 4 | 24 |
+| LLM (all issues) | 4 / 4 | 21 |
+| LLM (`unfair_clause` only) | 2 / 4 | 2 |
 | Keyword baseline | 2 / 4 | 4 |
 
-**What the LLM actually flags on clean contracts** (manually inspected in `eval/results.json`): not fabricated risky clauses, but real gaps — e.g. "no overtime/exempt classification stated," "missing benefits/equity provisions," "undefined 'cause' for termination." The system prompt explicitly asks for `missing_protections`, and a short contract will always be missing *something* relative to an exhaustive standard, so a nonzero flag count here is expected behavior, not hallucination. The practical risk is UX, not accuracy: the `overall_risk` field came back `"medium"` (occasionally `"high"`) on every clean contract in this set, which could read as alarming to a non-lawyer user looking at an otherwise fair contract. Consider whether "missing standard clause" issues should be visually distinct from "actively unfair clause" issues in the app, and whether `overall_risk` should weight the two differently.
+**`overall_risk` on clean contracts**: 1 low, 3 medium — this is the number that actually reaches the user first, so it's the real headline metric for whether the app alarms someone unnecessarily.
+
+As of this run, every flag the LLM raised on clean contracts was typed `missing_protection` (19 total) rather than `unfair_clause` (2 total) — real gaps like "no overtime/exempt classification stated" or "undefined 'cause' for termination," not fabricated risky clauses. The schema now separates the two (`issue.type`), the app displays `missing_protection` issues with a neutral "Missing protection" label instead of a severity badge and excludes them from the High/Medium/Low counts, and the prompt instructs the model not to let missing-protection-only findings push `overall_risk` above "medium". The `overall_risk` distribution above is the number to watch on future runs to confirm that instruction is actually holding.
 
 ## Recall by category (traps detected / traps total)
 
@@ -37,7 +40,7 @@ Precision is issue-level: "of the issues/flags raised, how many corresponded to 
 |---|---|---|---|
 | employment | 3 | 6/6 (100.0%) | 3/6 (50.0%) |
 | lease | 3 | 6/6 (100.0%) | 1/6 (16.7%) |
-| loan | 3 | 6/6 (100.0%) | 5/6 (83.3%) |
+| loan | 3 | 5/6 (83.3%) | 5/6 (83.3%) |
 | nda | 3 | 6/6 (100.0%) | 2/6 (33.3%) |
 | service | 3 | 6/6 (100.0%) | 3/6 (50.0%) |
 | tos | 3 | 6/6 (100.0%) | 3/6 (50.0%) |
@@ -46,28 +49,28 @@ Precision is issue-level: "of the issues/flags raised, how many corresponded to 
 
 | Doc | Category | Clean? | Overall risk (LLM) | LLM traps | Baseline traps | LLM issues raised | Baseline flags raised |
 |---|---|---|---|---|---|---|---|
-| clean-employment-01 | employment | true | medium | — | — | 5 | 2 |
-| clean-nda-01 | nda | true | medium | — | — | 6 | 0 |
-| clean-lease-01 | lease | true | medium | — | — | 5 | 0 |
-| clean-service-01 | service | true | high | — | — | 8 | 2 |
+| clean-employment-01 | employment | true | low | — | — | 5 | 2 |
+| clean-nda-01 | nda | true | medium | — | — | 1 | 0 |
+| clean-lease-01 | lease | true | medium | — | — | 7 | 0 |
+| clean-service-01 | service | true | medium | — | — | 8 | 2 |
 | employment-01 | employment | false | high | 2/2 | 1/2 | 6 | 6 |
-| employment-02 | employment | false | high | 2/2 | 1/2 | 6 | 5 |
-| employment-03 | employment | false | high | 2/2 | 1/2 | 5 | 5 |
-| lease-01 | lease | false | high | 2/2 | 0/2 | 5 | 3 |
-| lease-02 | lease | false | high | 2/2 | 0/2 | 8 | 1 |
-| lease-03 | lease | false | high | 2/2 | 1/2 | 6 | 4 |
-| loan-01 | loan | false | high | 2/2 | 2/2 | 6 | 2 |
-| loan-02 | loan | false | high | 2/2 | 1/2 | 6 | 2 |
-| loan-03 | loan | false | high | 2/2 | 2/2 | 6 | 2 |
-| nda-01 | nda | false | high | 2/2 | 0/2 | 8 | 2 |
+| employment-02 | employment | false | high | 2/2 | 1/2 | 5 | 5 |
+| employment-03 | employment | false | high | 2/2 | 1/2 | 4 | 5 |
+| lease-01 | lease | false | high | 2/2 | 0/2 | 4 | 3 |
+| lease-02 | lease | false | high | 2/2 | 0/2 | 4 | 1 |
+| lease-03 | lease | false | high | 2/2 | 1/2 | 4 | 4 |
+| loan-01 | loan | false | high | 2/2 | 2/2 | 4 | 2 |
+| loan-02 | loan | false | high | 2/2 | 1/2 | 5 | 2 |
+| loan-03 | loan | false | high | 1/2 | 2/2 | 3 | 2 |
+| nda-01 | nda | false | high | 2/2 | 0/2 | 4 | 2 |
 | nda-02 | nda | false | high | 2/2 | 2/2 | 7 | 3 |
 | nda-03 | nda | false | high | 2/2 | 0/2 | 10 | 1 |
 | service-01 | service | false | high | 2/2 | 1/2 | 10 | 4 |
-| service-02 | service | false | high | 2/2 | 0/2 | 8 | 2 |
-| service-03 | service | false | high | 2/2 | 2/2 | 9 | 7 |
-| tos-01 | tos | false | high | 2/2 | 2/2 | 7 | 8 |
-| tos-02 | tos | false | high | 2/2 | 0/2 | 5 | 1 |
-| tos-03 | tos | false | high | 2/2 | 1/2 | 9 | 5 |
+| service-02 | service | false | high | 2/2 | 0/2 | 9 | 2 |
+| service-03 | service | false | high | 2/2 | 2/2 | 4 | 7 |
+| tos-01 | tos | false | high | 2/2 | 2/2 | 4 | 8 |
+| tos-02 | tos | false | high | 2/2 | 0/2 | 7 | 1 |
+| tos-03 | tos | false | high | 2/2 | 1/2 | 4 | 5 |
 
 ## Methodology & caveats
 
