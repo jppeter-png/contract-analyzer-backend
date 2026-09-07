@@ -1,0 +1,531 @@
+[
+  {
+    "id": "employment-01",
+    "category": "employment",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "EMPLOYMENT AGREEMENT\n\nThis Employment Agreement is entered into between Northwind Software Inc. (\"Company\") and the Employee.\n\n1. Position and Duties. Employee will serve as Senior Software Engineer, reporting to the VP of Engineering.\n\n2. Compensation. Employee will receive an annual base salary of $145,000, paid bi-weekly, plus eligibility for an annual bonus at Company's sole discretion.\n\n3. Intellectual Property. Employee agrees that any invention, work of authorship, or idea conceived by Employee at any time during the term of employment, whether or not during working hours or using Company resources, and whether or not related to Company's business, shall be the sole and exclusive property of the Company.\n\n4. Dispute Resolution. Any dispute arising out of or relating to this Agreement, including claims of discrimination or wrongful termination, shall be resolved exclusively through binding arbitration administered by an arbitrator selected by the Company. Employee waives any right to a jury trial or to participate in a class or collective action.\n\n5. At-Will Employment. Employment is at-will and may be terminated by either party at any time, with or without cause or notice.",
+    "ground_truth_issues": [
+      {
+        "category": "ip-assignment",
+        "severity": "high",
+        "clause_excerpt": "any invention, work of authorship, or idea conceived by Employee at any time during the term of employment, whether or not during working hours or using Company resources, and whether or not related to Company's business, shall be the sole and exclusive property of the Company",
+        "why_its_a_trap": "Claims ownership of personal projects created on the employee's own time with no company resources and no relation to the company's business — far broader than a standard work-for-hire IP clause."
+      },
+      {
+        "category": "arbitration",
+        "severity": "high",
+        "clause_excerpt": "shall be resolved exclusively through binding arbitration administered by an arbitrator selected by the Company. Employee waives any right to a jury trial or to participate in a class or collective action",
+        "why_its_a_trap": "The employer unilaterally selects the arbitrator (no neutral selection process), and the clause forces a waiver of jury trial and class-action rights even for discrimination and wrongful-termination claims."
+      }
+    ]
+  },
+  {
+    "id": "employment-02",
+    "category": "employment",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "OFFER OF EMPLOYMENT\n\nHarbor Logistics LLC is pleased to offer you the position of Operations Manager.\n\nCompensation: $72,000/year base, plus a discretionary annual performance bonus historically ranging from 5-10% of base salary.\n\nBonus Clawback: Any performance bonus paid to Employee is subject to full repayment if Employee resigns or is terminated for any reason within 24 months of the bonus payment date, regardless of the reason for departure.\n\nConfidentiality: Employee agrees to hold confidential all information relating to the Company's business, including general industry knowledge and skills acquired during employment, and shall not disclose or use such information at any time, without geographic or temporal limitation.\n\nBenefits: Employee is eligible for health insurance after a 60-day waiting period, and 15 days of PTO annually, accruing monthly.\n\nWork Schedule: Standard business hours, Monday through Friday, with occasional evening availability for on-call rotations as needed by the operations team.",
+    "ground_truth_issues": [
+      {
+        "category": "bonus-clawback",
+        "severity": "medium",
+        "clause_excerpt": "Any performance bonus paid to Employee is subject to full repayment if Employee resigns or is terminated for any reason within 24 months of the bonus payment date, regardless of the reason for departure",
+        "why_its_a_trap": "Clawback applies even to voluntary resignation or no-cause termination, for a full 24 months — an unusually punitive trigger for what's framed as ordinary performance compensation."
+      },
+      {
+        "category": "confidentiality-scope",
+        "severity": "low",
+        "clause_excerpt": "including general industry knowledge and skills acquired during employment, and shall not disclose or use such information at any time, without geographic or temporal limitation",
+        "why_its_a_trap": "Confidentiality is defined to cover general industry knowledge and skills the employee would normally be free to take to a new job, with no time limit — overbroad, though less severe than a clause restricting an actual trade secret."
+      }
+    ]
+  },
+  {
+    "id": "employment-03",
+    "category": "employment",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "EMPLOYMENT CONTRACT\n\nBetween Bright Path Media and the Employee, for the role of Content Strategist.\n\nSalary: $58,000 per year.\n\nTermination: The Company may terminate this Agreement immediately, without notice or cause, and without payment of any accrued but unused vacation time, notwithstanding any state law requiring payout of accrued vacation upon termination.\n\nNon-Solicitation: For 5 years after termination, Employee shall not solicit, hire, or attempt to hire any person who was employed by the Company at any point during the preceding 10 years.\n\nEquity: Employee is granted stock options vesting over 4 years with a 1-year cliff, on terms consistent with the Company's standard equity plan.\n\nExpenses: Reasonable business expenses pre-approved by a manager will be reimbursed within 30 days of submission.",
+    "ground_truth_issues": [
+      {
+        "category": "wage-theft",
+        "severity": "high",
+        "clause_excerpt": "without payment of any accrued but unused vacation time, notwithstanding any state law requiring payout of accrued vacation upon termination",
+        "why_its_a_trap": "Explicitly attempts to override state law requiring payout of accrued vacation — this is the kind of clause likely to be unenforceable and is a clear wage-theft red flag."
+      },
+      {
+        "category": "non-solicitation",
+        "severity": "medium",
+        "clause_excerpt": "For 5 years after termination, Employee shall not solicit, hire, or attempt to hire any person who was employed by the Company at any point during the preceding 10 years",
+        "why_its_a_trap": "A 5-year restriction reaching back to cover employees from up to 10 years before termination is far outside the 1-2 year ranges that are typically enforceable for non-solicitation clauses."
+      }
+    ]
+  },
+  {
+    "id": "employment-04",
+    "category": "employment",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "EMPLOYMENT AGREEMENT\n\nBetween Alderwood Robotics and Employee, for the role of Firmware Engineer.\n\n1. Definitions. \"Company Business\" means the design, manufacture, or sale of robotics or automation hardware, and any other line of business the Company may enter, announce, or acquire at any time during Employee's employment.\n\n2. Compensation. $128,000 annual base salary, reviewed annually, with standard benefits per the employee handbook.\n\n3. Non-Competition. For a period of 1 year following termination of employment for any reason, Employee shall not accept employment with, consult for, or hold any ownership interest in any entity engaged in Company Business.\n\n4. Termination. Either party may terminate this Agreement with 2 weeks' written notice. Company will pay out any accrued, unused PTO upon termination as required by applicable law.\n\n5. Governing Law. This Agreement is governed by the laws of the state in which Employee primarily works.",
+    "ground_truth_issues": [
+      {
+        "category": "non-compete",
+        "severity": "medium",
+        "clause_excerpt": "Employee shall not accept employment with, consult for, or hold any ownership interest in any entity engaged in Company Business",
+        "why_its_a_trap": "The 1-year duration looks reasonable in isolation, but \"Company Business\" is defined earlier to include any line of business the Company might enter or acquire in the future — so the actual scope of what's off-limits is open-ended and can't be determined at signing. The risk only becomes clear by cross-referencing the definitions section against the non-compete clause."
+      }
+    ]
+  },
+  {
+    "id": "employment-05",
+    "category": "employment",
+    "is_clean": true,
+    "source": "synthetic",
+    "text": "EMPLOYMENT AGREEMENT\n\nBetween Fairview Analytics and Employee, for the role of Data Analyst.\n\nCompensation: $95,000 annual base salary, reviewed annually, plus an annual bonus target of 10% based on clearly defined performance metrics shared with Employee at the start of each year.\n\nAt-Will Employment: Employment is at-will. Either party may terminate with two weeks' written notice. Upon termination without cause, Employee will receive 2 weeks of severance pay per year of service, up to a maximum of 12 weeks.\n\nNon-Compete: None. Employee may work for any employer, including competitors, after leaving the Company.\n\nConfidentiality: Employee agrees to keep the Company's trade secrets and proprietary business information confidential for 2 years following termination, excluding information that is publicly available, independently developed, or required to be disclosed by law.\n\nIntellectual Property: Inventions Employee creates within the scope of employment and using Company resources belong to the Company. Personal projects developed on Employee's own time and equipment, unrelated to Company business, remain Employee's property.\n\nDispute Resolution: Either party may pursue claims in court or through voluntary mediation; arbitration is optional, not mandatory, and either party may opt out within 30 days of signing.",
+    "ground_truth_issues": []
+  },
+  {
+    "id": "nda-01",
+    "category": "nda",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "MUTUAL NON-DISCLOSURE AGREEMENT\n\nBetween Vertex Analytics (\"Disclosing Party\") and Recipient.\n\n1. Confidential Information means any and all information disclosed by Disclosing Party, in any form, including information that is publicly known, information Recipient already possessed prior to disclosure, and information independently developed by Recipient.\n\n2. Term. The obligations of confidentiality under this Agreement shall survive in perpetuity and have no expiration date.\n\n3. Obligations. Recipient shall not disclose or use Confidential Information for any purpose other than evaluating a potential business relationship.\n\n4. Remedies. Any breach entitles Disclosing Party to seek injunctive relief and monetary damages as available under applicable law.",
+    "ground_truth_issues": [
+      {
+        "category": "overbroad-definition",
+        "severity": "high",
+        "clause_excerpt": "including information that is publicly known, information Recipient already possessed prior to disclosure, and information independently developed by Recipient",
+        "why_its_a_trap": "A proper NDA excludes information that's already public, already known, or independently developed. Including them in the definition means Recipient could technically be restricted from using its own pre-existing or independently-created knowledge."
+      },
+      {
+        "category": "perpetual-duration",
+        "severity": "medium",
+        "clause_excerpt": "The obligations of confidentiality under this Agreement shall survive in perpetuity and have no expiration date",
+        "why_its_a_trap": "Confidentiality obligations with no end date are unusual and often unenforceable — most NDAs specify a 2-5 year term."
+      }
+    ]
+  },
+  {
+    "id": "nda-02",
+    "category": "nda",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "NON-DISCLOSURE AGREEMENT\n\nBetween Sable Robotics Inc. and Contractor.\n\nContractor acknowledges that all information shared by Sable Robotics is proprietary and confidential and agrees not to disclose it to any third party for a period of 3 years from the date of disclosure.\n\nNon-Solicitation: During the engagement and for 18 months thereafter, Contractor shall not solicit for employment any individual who was an employee of Sable Robotics at the time of the engagement.\n\nReciprocity: This Agreement imposes confidentiality obligations on Contractor only; Sable Robotics may use or disclose any information Contractor shares during the engagement without restriction.\n\nReturn of Materials: Upon request, Contractor shall return or destroy all Confidential Information within 15 days.",
+    "ground_truth_issues": [
+      {
+        "category": "one-sided-obligations",
+        "severity": "medium",
+        "clause_excerpt": "This Agreement imposes confidentiality obligations on Contractor only; Sable Robotics may use or disclose any information Contractor shares during the engagement without restriction",
+        "why_its_a_trap": "A one-way confidentiality obligation in what's framed as a mutual working relationship — Contractor's own confidential information gets no protection at all."
+      },
+      {
+        "category": "non-solicitation",
+        "severity": "low",
+        "clause_excerpt": "During the engagement and for 18 months thereafter, Contractor shall not solicit for employment any individual who was an employee of Sable Robotics at the time of the engagement",
+        "why_its_a_trap": "A non-solicitation clause embedded in an NDA is a modest scope-creep beyond confidentiality, though 18 months limited to current employees at time of engagement is within a defensible range — worth flagging but not severe."
+      }
+    ]
+  },
+  {
+    "id": "nda-03",
+    "category": "nda",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "CONFIDENTIALITY AGREEMENT\n\nBetween Pinecrest Health Systems and Vendor.\n\nVendor agrees to maintain the confidentiality of all Company information disclosed under this engagement for a period of 4 years.\n\nLiquidated Damages: Any breach of this Agreement, regardless of whether actual harm can be shown, entitles Company to liquidated damages of $250,000 per incident, in addition to any other remedies available at law.\n\nGoverning Law: This Agreement is governed by the laws of a jurisdiction to be selected by Company at its sole discretion at the time any dispute arises.\n\nAssignment: Company may assign this Agreement, and all of Vendor's confidentiality obligations under it, to any third party at any time without Vendor's consent.",
+    "ground_truth_issues": [
+      {
+        "category": "liquidated-damages",
+        "severity": "high",
+        "clause_excerpt": "entitles Company to liquidated damages of $250,000 per incident, in addition to any other remedies available at law",
+        "why_its_a_trap": "A large fixed penalty with no requirement to show actual harm, stackable per incident and on top of other remedies, is an unusually aggressive and potentially punitive damages structure for an NDA."
+      },
+      {
+        "category": "jurisdiction-selected-later",
+        "severity": "high",
+        "clause_excerpt": "governed by the laws of a jurisdiction to be selected by Company at its sole discretion at the time any dispute arises",
+        "why_its_a_trap": "Leaving governing law undetermined until a dispute actually happens, and letting only one party pick it, removes any predictability for the other side and all but guarantees a forum favorable to Company."
+      }
+    ]
+  },
+  {
+    "id": "nda-04",
+    "category": "nda",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "MUTUAL NON-DISCLOSURE AND EVALUATION AGREEMENT\n\nBetween Quill Data Corp and Evaluator.\n\n1. Confidential Information means all information disclosed by Quill Data Corp, and includes any notes, analyses, compilations, studies, or other documents prepared by Evaluator that contain, are based on, or are derived from Confidential Information.\n\n2. License. Evaluator may use Confidential Information solely to evaluate a potential transaction with Quill Data Corp.\n\n3. Ownership. All Confidential Information, as defined in Section 1, together with all right, title, and interest therein, remains the sole property of Quill Data Corp at all times.\n\n4. Term. This Agreement remains in effect for 2 years from the date of signature.",
+    "ground_truth_issues": [
+      {
+        "category": "ip-overreach",
+        "severity": "medium",
+        "clause_excerpt": "All Confidential Information, as defined in Section 1, together with all right, title, and interest therein, remains the sole property of Quill Data Corp at all times",
+        "why_its_a_trap": "This ownership clause looks like boilerplate on its own, but Section 1's definition of \"Confidential Information\" was quietly expanded to include Evaluator's own notes, analyses, and derivative work product — so the ownership clause effectively claims Quill's ownership over analysis the Evaluator itself created. Spotting this requires connecting Section 3 back to the broadened definition in Section 1."
+      }
+    ]
+  },
+  {
+    "id": "nda-05",
+    "category": "nda",
+    "is_clean": true,
+    "source": "synthetic",
+    "text": "MUTUAL NON-DISCLOSURE AGREEMENT\n\nBetween Cobalt Systems and Counterparty, entered into to facilitate discussions about a potential partnership.\n\nConfidential Information: Information disclosed by either party that is marked confidential or that would reasonably be understood to be confidential, excluding information that is or becomes public through no fault of the receiving party, was already known to the receiving party, or is independently developed.\n\nTerm: Confidentiality obligations last for 3 years from the date of disclosure.\n\nMutual Obligations: Both parties have equal and reciprocal confidentiality obligations.\n\nPermitted Disclosure: Either party may disclose Confidential Information if required by law or court order, provided it gives the other party reasonable advance notice where legally permitted.\n\nReturn of Materials: Upon request or termination of discussions, each party will return or destroy the other's Confidential Information within 30 days, except for one archival copy retained solely for legal compliance purposes.",
+    "ground_truth_issues": []
+  },
+  {
+    "id": "lease-01",
+    "category": "lease",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "RESIDENTIAL LEASE AGREEMENT\n\nBetween Meridian Properties (\"Landlord\") and Tenant, for the unit at 442 Alder St, Apt 3B.\n\nRent: $2,100/month. Landlord may increase rent by any amount, with 5 days' written notice, at any time during the lease term.\n\nSecurity Deposit: $2,100. Landlord may withhold any portion of the deposit for \"general wear and cleaning\" at Landlord's sole discretion, with no itemized list required.\n\nEntry: Landlord may enter the unit at any time, for any reason, without prior notice to Tenant.\n\nRenewal: This lease automatically renews for successive 12-month terms unless Tenant provides written notice of non-renewal at least 90 days before the term ends.",
+    "ground_truth_issues": [
+      {
+        "category": "rent-increase",
+        "severity": "high",
+        "clause_excerpt": "Landlord may increase rent by any amount, with 5 days' written notice, at any time during the lease term",
+        "why_its_a_trap": "No cap on increase amount and only 5 days' notice mid-lease — far short of what most jurisdictions require and effectively lets the landlord force out a tenant with almost no warning."
+      },
+      {
+        "category": "entry-notice",
+        "severity": "medium",
+        "clause_excerpt": "Landlord may enter the unit at any time, for any reason, without prior notice to Tenant",
+        "why_its_a_trap": "Removes the tenant's standard right to advance notice before landlord entry, which most residential tenancy law requires except in emergencies."
+      }
+    ]
+  },
+  {
+    "id": "lease-02",
+    "category": "lease",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "COMMERCIAL LEASE\n\nBetween Silverline Holdings and Tenant, for retail space at 88 Market Row.\n\nTerm: 5 years, with two 5-year renewal options at Tenant's discretion.\n\nMaintenance: Tenant is responsible for all repairs and maintenance to the premises, including structural repairs, roof, and HVAC systems, regardless of the cause of damage.\n\nSubletting: Tenant may not sublet or assign any portion of the premises without Landlord's consent, which shall not be unreasonably withheld.\n\nLate Fees: Any rent payment received after the 5th of the month incurs a late fee of $150, plus 1.5% monthly interest on the unpaid balance.",
+    "ground_truth_issues": [
+      {
+        "category": "structural-repairs-shifted",
+        "severity": "medium",
+        "clause_excerpt": "Tenant is responsible for all repairs and maintenance to the premises, including structural repairs, roof, and HVAC systems, regardless of the cause of damage",
+        "why_its_a_trap": "Structural repairs, roof, and HVAC are normally landlord obligations in a commercial lease — shifting them entirely to the tenant, with no exception even for landlord-caused damage, is an unusual and costly liability transfer."
+      },
+      {
+        "category": "late-fee",
+        "severity": "low",
+        "clause_excerpt": "incurs a late fee of $150, plus 1.5% monthly interest on the unpaid balance",
+        "why_its_a_trap": "A flat fee plus ongoing interest is on the higher end for commercial lease late charges, though not egregious — worth negotiating but not a major red flag on its own."
+      }
+    ]
+  },
+  {
+    "id": "lease-03",
+    "category": "lease",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "RESIDENTIAL LEASE\n\nBetween Oak & Pine Rentals and Tenant, unit 12C.\n\nPet Policy: A pet deposit of $500 is non-refundable regardless of whether any pet damage occurs, and is charged even if Tenant never has a pet during the lease term but merely reserves the right to.\n\nDeposit Return Timeline: Landlord shall return the security deposit \"within a reasonable time\" after move-out, with no specific deadline stated.\n\nAutomatic Renewal: This lease renews automatically for another full 12-month term unless Tenant gives 120 days' written notice — nearly a third of the full lease term.\n\nUtilities: Tenant is responsible for electricity, gas, and water, billed directly by the respective utility providers.",
+    "ground_truth_issues": [
+      {
+        "category": "nonrefundable-pet-deposit",
+        "severity": "high",
+        "clause_excerpt": "A pet deposit of $500 is non-refundable regardless of whether any pet damage occurs, and is charged even if Tenant never has a pet during the lease term but merely reserves the right to",
+        "why_its_a_trap": "A non-refundable charge levied even when no pet is ever present and no damage occurs is effectively a disguised fee, not a real deposit — and many jurisdictions cap or prohibit non-refundable pet deposits."
+      },
+      {
+        "category": "notice-period-excessive",
+        "severity": "high",
+        "clause_excerpt": "renews automatically for another full 12-month term unless Tenant gives 120 days' written notice",
+        "why_its_a_trap": "A 120-day non-renewal notice window is nearly a third of the lease term itself, making it easy for a tenant to miss the deadline and get locked into another full year unintentionally."
+      }
+    ]
+  },
+  {
+    "id": "lease-04",
+    "category": "lease",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "RESIDENTIAL LEASE AGREEMENT\n\nBetween Kestrel Property Group and Tenant, unit 7F.\n\n1. Rent. Base rent is $1,950/month, due on the 1st.\n\n2. Additional Rent. \"Additional Rent\" means any charge, fee, fine, or cost Landlord determines in its discretion is owed by Tenant under this Lease, including but not limited to amenity fees, administrative fees, and any charges Landlord deems necessary to protect its interest in the property. Additional Rent is due within 5 days of Landlord's written demand.\n\n3. Default and Eviction. Failure to pay any Rent or Additional Rent within 5 days of the due date constitutes a material default, entitling Landlord to pursue eviction proceedings immediately.\n\n4. Quiet Enjoyment. Tenant shall have quiet enjoyment of the premises, subject to Landlord's rights under this Lease.",
+    "ground_truth_issues": [
+      {
+        "category": "eviction-trigger-via-vague-fees",
+        "severity": "medium",
+        "clause_excerpt": "Failure to pay any Rent or Additional Rent within 5 days of the due date constitutes a material default, entitling Landlord to pursue eviction proceedings immediately",
+        "why_its_a_trap": "On its own, a 5-day default-and-eviction clause for unpaid rent looks fairly standard. The real risk is that \"Additional Rent\" (Section 2) is defined so broadly that the landlord can unilaterally invent a new fee and then use non-payment of that fee, on a 5-day clock, as eviction grounds — the danger only appears when the default clause is read against the earlier fee definition."
+      }
+    ]
+  },
+  {
+    "id": "lease-05",
+    "category": "lease",
+    "is_clean": true,
+    "source": "synthetic",
+    "text": "RESIDENTIAL LEASE AGREEMENT\n\nBetween Elmwood Properties and Tenant, unit 5A.\n\nRent: $1,850/month. Rent may only be increased upon lease renewal, with at least 60 days' written notice, and any increase will not exceed 5% or the maximum permitted by local law, whichever is lower.\n\nSecurity Deposit: $1,850, refundable within 21 days of move-out, less an itemized list of any deductions for damage beyond normal wear and tear.\n\nEntry: Landlord will provide at least 24 hours' written or verbal notice before entering the unit, except in genuine emergencies.\n\nMaintenance: Landlord is responsible for structural repairs, plumbing, electrical, and HVAC systems. Tenant is responsible for routine upkeep and any damage caused by Tenant's negligence.\n\nRenewal: This lease converts to month-to-month after the initial 12-month term unless either party gives 30 days' notice to terminate or a new fixed-term lease is signed.",
+    "ground_truth_issues": []
+  },
+  {
+    "id": "service-01",
+    "category": "service",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "CONSULTING SERVICES AGREEMENT\n\nBetween Redwood Consulting (\"Consultant\") and Client.\n\nScope of Work: Consultant will provide general business consulting services as reasonably requested by Client from time to time, with deliverables and timelines to be determined later at Client's discretion.\n\nLiability: Consultant's total liability under this Agreement, including for gross negligence or willful misconduct, shall not exceed $100, regardless of the actual damages incurred by Client.\n\nIndemnification: Consultant shall indemnify, defend, and hold harmless Client from any and all claims, losses, or damages arising from this engagement, including claims caused by Client's own negligence.\n\nPayment: Client shall pay invoices within 30 days of receipt.",
+    "ground_truth_issues": [
+      {
+        "category": "liability-cap-too-low",
+        "severity": "high",
+        "clause_excerpt": "Consultant's total liability under this Agreement, including for gross negligence or willful misconduct, shall not exceed $100, regardless of the actual damages incurred by Client",
+        "why_its_a_trap": "A $100 cap that also covers gross negligence and willful misconduct — categories of harm that liability caps normally exclude — leaves Client with essentially no real recourse no matter how badly Consultant fails."
+      },
+      {
+        "category": "one-sided-indemnity",
+        "severity": "medium",
+        "clause_excerpt": "Consultant shall indemnify, defend, and hold harmless Client from any and all claims, losses, or damages arising from this engagement, including claims caused by Client's own negligence",
+        "why_its_a_trap": "Consultant is forced to cover claims caused by Client's own negligence, not just its own — a one-sided risk allocation with no reciprocal protection for Consultant."
+      }
+    ]
+  },
+  {
+    "id": "service-02",
+    "category": "service",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "SOFTWARE DEVELOPMENT AGREEMENT\n\nBetween Bluefin Digital (\"Agency\") and Client.\n\nIntellectual Property: All work product, including any pre-existing tools, libraries, and frameworks owned by Agency and incorporated into the deliverables, shall become the sole property of Client upon payment, with no license retained by Agency even for its own reusable components.\n\nChange Orders: Any changes to project scope requested by Client shall be performed by Agency at no additional cost, regardless of the scope or time required.\n\nWarranty: Agency warrants the software will be \"generally functional\" for a period of 90 days, and disclaims all other warranties including fitness for a particular purpose.\n\nPayment Schedule: 50% due at signing, 50% due upon delivery.",
+    "ground_truth_issues": [
+      {
+        "category": "ip-overreach",
+        "severity": "medium",
+        "clause_excerpt": "including any pre-existing tools, libraries, and frameworks owned by Agency and incorporated into the deliverables, shall become the sole property of Client upon payment, with no license retained by Agency",
+        "why_its_a_trap": "Client claims ownership of Agency's own pre-existing tools and frameworks with no license carve-out — this would prevent Agency from reusing its own code on future projects, which is not how software service agreements are usually structured."
+      },
+      {
+        "category": "unlimited-free-change-orders",
+        "severity": "medium",
+        "clause_excerpt": "Any changes to project scope requested by Client shall be performed by Agency at no additional cost, regardless of the scope or time required",
+        "why_its_a_trap": "No change-order pricing mechanism at all means Client can expand scope indefinitely without Agency being compensated for the added work — a classic scope-creep trap."
+      }
+    ]
+  },
+  {
+    "id": "service-03",
+    "category": "service",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "MARKETING SERVICES AGREEMENT\n\nBetween Lumen Creative and Client.\n\nFees: Client will pay a monthly retainer of $6,000.\n\nDispute Resolution: All disputes shall be resolved by binding arbitration administered by an arbitrator of Agency's choosing, with Client responsible for 100% of arbitration costs regardless of outcome.\n\nTermination: Either party may terminate with 30 days' written notice.\n\nDeliverables: Agency will provide a monthly content calendar, two blog posts, and social media management as described in Exhibit A.",
+    "ground_truth_issues": [
+      {
+        "category": "arbitration-costs-one-sided",
+        "severity": "high",
+        "clause_excerpt": "binding arbitration administered by an arbitrator of Agency's choosing, with Client responsible for 100% of arbitration costs regardless of outcome",
+        "why_its_a_trap": "Client must pay all arbitration costs no matter who wins, and Agency alone picks the arbitrator — this stacks the deck against Client in any dispute and could make pursuing a legitimate claim financially impractical."
+      },
+      {
+        "category": "termination-notice",
+        "severity": "low",
+        "clause_excerpt": "Either party may terminate with 30 days' written notice",
+        "why_its_a_trap": "This term is actually balanced and standard — flagged here only as a minor note that Client should confirm what happens to fees already paid for the notice period, not because the clause itself is unfair."
+      }
+    ]
+  },
+  {
+    "id": "service-04",
+    "category": "service",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "PROFESSIONAL SERVICES AGREEMENT\n\nBetween Cartwright Advisory and Client.\n\n1. Definitions. \"Deliverables\" means any work product, report, analysis, or recommendation provided by Advisor, whether in draft or final form, and whether or not formally accepted by Client.\n\n2. Fees. Client will pay a flat project fee of $18,000, invoiced in three equal installments.\n\n3. Acceptance. Client shall be deemed to have accepted all Deliverables, and payment for the corresponding installment becomes due, five business days after Advisor provides a Deliverable, whether or not Client has reviewed it.\n\n4. Term. This Agreement continues until all Deliverables are provided and the final invoice is paid.",
+    "ground_truth_issues": [
+      {
+        "category": "deemed-acceptance",
+        "severity": "low",
+        "clause_excerpt": "Client shall be deemed to have accepted all Deliverables, and payment for the corresponding installment becomes due, five business days after Advisor provides a Deliverable, whether or not Client has reviewed it",
+        "why_its_a_trap": "A short automatic-acceptance window is common enough not to be alarming on its own, but combined with the earlier definition of \"Deliverables\" including draft-form work product, it means Client could owe payment for a rough draft it never got to properly review — the practical risk only shows up when the acceptance clause is read against the broad definition of Deliverables."
+      }
+    ]
+  },
+  {
+    "id": "service-05",
+    "category": "service",
+    "is_clean": true,
+    "source": "synthetic",
+    "text": "CONSULTING SERVICES AGREEMENT\n\nBetween Bellwether Advisors and Client.\n\nScope of Work: Consultant will deliver a market analysis report and three strategy workshops, as detailed in Exhibit A, on the timeline set out in Exhibit B. Any changes to project scope will be documented in a written change order specifying additional fees and timeline impact, subject to Client's approval.\n\nPayment: Client will pay invoices within 30 days of receipt. Amounts not reasonably disputed in writing within 15 days are deemed accepted.\n\nLiability: Each party's total liability is capped at the total fees paid under this Agreement in the preceding 12 months, except for claims arising from gross negligence, willful misconduct, or breach of confidentiality.\n\nIndemnification: Each party will indemnify the other only for claims arising from its own negligence or breach of this Agreement.\n\nTermination: Either party may terminate with 30 days' written notice. Client will pay for all work performed and reasonable costs incurred through the termination date.",
+    "ground_truth_issues": []
+  },
+  {
+    "id": "loan-01",
+    "category": "loan",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "PERSONAL LOAN AGREEMENT\n\nBetween Crestview Lending (\"Lender\") and Borrower. Principal: $25,000.\n\nInterest Rate: Variable rate, currently 9.5% APR, which Lender may adjust at any time at its sole discretion, with no cap on the maximum rate and no requirement to give advance notice.\n\nDefault: Borrower shall be in default if Borrower is more than 3 days late on any payment, or experiences any \"adverse change in financial condition\" as determined by Lender in its sole discretion.\n\nAcceleration: Upon any default, the entire unpaid principal balance, plus all future interest, becomes immediately due and payable in full.",
+    "ground_truth_issues": [
+      {
+        "category": "uncapped-variable-rate",
+        "severity": "high",
+        "clause_excerpt": "Lender may adjust at any time at its sole discretion, with no cap on the maximum rate and no requirement to give advance notice",
+        "why_its_a_trap": "No cap on the interest rate and no advance notice requirement means Borrower has no way to anticipate or budget for future rate changes, which could rise dramatically at Lender's whim."
+      },
+      {
+        "category": "broad-default-trigger",
+        "severity": "high",
+        "clause_excerpt": "or experiences any \"adverse change in financial condition\" as determined by Lender in its sole discretion",
+        "why_its_a_trap": "A subjective, Lender-determined default trigger with no objective standard means Borrower could be declared in default and face immediate acceleration for reasons entirely outside missed payments."
+      }
+    ]
+  },
+  {
+    "id": "loan-02",
+    "category": "loan",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "SMALL BUSINESS LOAN AGREEMENT\n\nBetween Ironclad Capital and Borrower. Principal: $150,000.\n\nPersonal Guarantee: All owners of Borrower, regardless of ownership percentage, personally guarantee full repayment of this loan, including all fees, penalties, and Lender's collection costs and attorney's fees, without limitation.\n\nCross-Default: Default under this Agreement automatically triggers default under any other agreement, loan, or lease Borrower has with Lender or any affiliate of Lender, even if Borrower is current on those other obligations.\n\nPrepayment: Borrower may prepay in full at any time, subject to a prepayment penalty of 2% of the prepaid amount during the first 24 months.",
+    "ground_truth_issues": [
+      {
+        "category": "cross-default",
+        "severity": "medium",
+        "clause_excerpt": "Default under this Agreement automatically triggers default under any other agreement, loan, or lease Borrower has with Lender or any affiliate of Lender, even if Borrower is current on those other obligations",
+        "why_its_a_trap": "A default on this loan cascades into unrelated agreements with Lender's affiliates, even ones Borrower is current on — an aggressive cross-default provision that multiplies the consequences of a single missed payment."
+      },
+      {
+        "category": "unlimited-personal-guarantee",
+        "severity": "medium",
+        "clause_excerpt": "regardless of ownership percentage, personally guarantee full repayment of this loan, including all fees, penalties, and Lender's collection costs and attorney's fees, without limitation",
+        "why_its_a_trap": "Every owner is personally on the hook regardless of how small their stake is, with no cap on fees/penalties/collection costs added to the guarantee — a minority owner could end up liable for the full amount plus open-ended costs."
+      }
+    ]
+  },
+  {
+    "id": "loan-03",
+    "category": "loan",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "AUTO LOAN AGREEMENT\n\nBetween Pacific Trust Finance and Borrower. Principal: $32,000, 72-month term.\n\nBalloon Payment: Monthly payments are calculated on a 96-month amortization schedule, but the loan matures at month 72, requiring a final balloon payment of approximately $9,800.\n\nInsurance: Borrower must maintain comprehensive and collision insurance naming Lender as loss payee; if Borrower fails to do so, Lender may unilaterally purchase \"force-placed\" insurance at a rate of Lender's choosing and add the cost to the loan principal.\n\nLate Fees: Any payment more than 10 days late incurs a late fee of $35.",
+    "ground_truth_issues": [
+      {
+        "category": "hidden-balloon-payment",
+        "severity": "high",
+        "clause_excerpt": "Monthly payments are calculated on a 96-month amortization schedule, but the loan matures at month 72, requiring a final balloon payment of approximately $9,800",
+        "why_its_a_trap": "Payments are structured to look like a normal 96-month loan, but the loan actually ends at month 72 — creating a ~$9,800 balloon payment a borrower budgeting off the monthly amount may not see coming."
+      },
+      {
+        "category": "force-placed-insurance",
+        "severity": "medium",
+        "clause_excerpt": "Lender may unilaterally purchase \"force-placed\" insurance at a rate of Lender's choosing and add the cost to the loan principal",
+        "why_its_a_trap": "Lender can buy insurance on Borrower's behalf at a self-chosen rate — typically well above market — and simply tack the cost onto the loan, with no competitive-pricing protection for Borrower."
+      }
+    ]
+  },
+  {
+    "id": "loan-04",
+    "category": "loan",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "PERSONAL LOAN AGREEMENT\n\nBetween Northgate Credit Union and Borrower. Principal: $12,000, fixed 7.2% APR, 48-month term.\n\nLate Fees: A payment more than 15 days late incurs a late fee of $40, capped at one late fee per billing cycle.\n\nPrepayment: Borrower may prepay all or part of the loan at any time with no penalty.\n\nGrace Period: There is no grace period or cure period for any missed payment; a single missed payment constitutes default, and Lender may accelerate the full balance immediately without prior notice.",
+    "ground_truth_issues": [
+      {
+        "category": "no-cure-period",
+        "severity": "medium",
+        "clause_excerpt": "a single missed payment constitutes default, and Lender may accelerate the full balance immediately without prior notice",
+        "why_its_a_trap": "No grace period and no notice before acceleration means a single late payment — even an honest mistake — can immediately trigger a demand for the full remaining balance."
+      },
+      {
+        "category": "late-fee",
+        "severity": "low",
+        "clause_excerpt": "A payment more than 15 days late incurs a late fee of $40, capped at one late fee per billing cycle",
+        "why_its_a_trap": "This clause is actually reasonable (capped, modest amount, generous 15-day window) — included mainly to note it does NOT offset the missing grace period elsewhere in the agreement, not because the fee itself is a trap."
+      }
+    ]
+  },
+  {
+    "id": "loan-05",
+    "category": "loan",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "BUSINESS LINE OF CREDIT AGREEMENT\n\nBetween Founders Capital Partners and Borrower. Credit Limit: $75,000.\n\n1. Definitions. \"Obligations\" means all amounts owed under this Agreement, including principal, interest, fees, and any other amounts Lender determines in good faith are owed by Borrower under this Agreement or any related document.\n\n2. Collateral. Borrower grants Lender a security interest in all business assets, now owned or hereafter acquired, to secure payment of the Obligations.\n\n3. Interest. Draws accrue interest at 11% APR, billed monthly.\n\n4. Renewal. This line of credit renews annually unless either party provides 60 days' written notice of non-renewal.",
+    "ground_truth_issues": [
+      {
+        "category": "overbroad-collateral-via-definition",
+        "severity": "medium",
+        "clause_excerpt": "Borrower grants Lender a security interest in all business assets, now owned or hereafter acquired, to secure payment of the Obligations",
+        "why_its_a_trap": "A blanket lien on all business assets is already broad, but it's secured against \"Obligations\" — a term defined earlier to include any amount Lender determines in good faith is owed under this or any related document, not just the credit line itself. Read together, this could let Lender reach the collateral for more than the line of credit balance."
+      }
+    ]
+  },
+  {
+    "id": "tos-01",
+    "category": "tos",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "TERMS OF SERVICE\n\nThese Terms govern your use of the Nimbus App.\n\nModifications: We may modify these Terms at any time, for any reason, effective immediately upon posting to our website, without direct notice to you. Your continued use of the App constitutes acceptance of the modified Terms.\n\nContent License: By posting any content through the App, you grant us a perpetual, irrevocable, worldwide, royalty-free, sublicensable license to use, reproduce, modify, distribute, and create derivative works from your content for any purpose, including commercial purposes unrelated to the App.\n\nAccount Termination: We may suspend or terminate your account at any time, for any reason or no reason, without notice, and without any obligation to refund any fees paid.",
+    "ground_truth_issues": [
+      {
+        "category": "unilateral-modification",
+        "severity": "high",
+        "clause_excerpt": "We may modify these Terms at any time, for any reason, effective immediately upon posting to our website, without direct notice to you",
+        "why_its_a_trap": "Terms can change instantly with no direct notice — just posting the change is deemed sufficient, and continued use is treated as automatic acceptance of terms the user may never see."
+      },
+      {
+        "category": "perpetual-content-license",
+        "severity": "high",
+        "clause_excerpt": "a perpetual, irrevocable, worldwide, royalty-free, sublicensable license to use, reproduce, modify, distribute, and create derivative works from your content for any purpose, including commercial purposes unrelated to the App",
+        "why_its_a_trap": "The license is perpetual, irrevocable, and allows commercial use entirely unrelated to operating the app — far broader than what's needed to actually run the service."
+      }
+    ]
+  },
+  {
+    "id": "tos-02",
+    "category": "tos",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "PRIVACY POLICY & TERMS\n\nWelcome to Halcyon Fitness App.\n\nData Collection: We collect your location data continuously, even when the app is not in use, and share this data with \"marketing partners\" without specifying who those partners are or how they will use the data.\n\nCancellation: Subscriptions renew automatically. To cancel, you must call our support line during specific business hours and provide 30 days' advance notice; email or in-app cancellation is not available.\n\nAccount Data Export: Users may request a full export of their workout and account data in a standard format (CSV or JSON) at any time, free of charge.",
+    "ground_truth_issues": [
+      {
+        "category": "vague-third-party-sharing",
+        "severity": "medium",
+        "clause_excerpt": "share this data with \"marketing partners\" without specifying who those partners are or how they will use the data",
+        "why_its_a_trap": "Continuous background location data shared with unnamed \"marketing partners\" gives the user no way to know who actually receives sensitive location history or for what purpose."
+      },
+      {
+        "category": "difficult-cancellation",
+        "severity": "low",
+        "clause_excerpt": "you must call our support line during specific business hours and provide 30 days' advance notice; email or in-app cancellation is not available",
+        "why_its_a_trap": "Requiring a phone call during limited hours with a month of advance notice, and blocking the easier channels (email, in-app) a user signed up through, is a mild but real \"dark pattern\" making cancellation deliberately harder than signup."
+      }
+    ]
+  },
+  {
+    "id": "tos-03",
+    "category": "tos",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "TERMS OF USE\n\nFor the Quicklist marketplace platform.\n\nAccount Suspension: We reserve the right to suspend or terminate your account and withhold any funds in your account balance for up to 180 days after termination, for any reason, including suspected but unproven violations of these Terms.\n\nLiability: Our total liability to you for any claim arising from your use of the platform is limited to $50, regardless of the actual amount of any transaction or damages incurred.\n\nFees: Platform fees are 15% of each completed transaction, disclosed at checkout before you confirm a sale.",
+    "ground_truth_issues": [
+      {
+        "category": "withhold-funds-on-suspicion",
+        "severity": "high",
+        "clause_excerpt": "withhold any funds in your account balance for up to 180 days after termination, for any reason, including suspected but unproven violations of these Terms",
+        "why_its_a_trap": "Funds can be frozen for up to six months based on a mere unproven suspicion, with no described appeal process — a significant financial risk for anyone using the platform to get paid."
+      },
+      {
+        "category": "liability-cap-too-low",
+        "severity": "medium",
+        "clause_excerpt": "Our total liability to you for any claim arising from your use of the platform is limited to $50, regardless of the actual amount of any transaction or damages incurred",
+        "why_its_a_trap": "A flat $50 cap regardless of transaction size means the platform bears essentially no risk even if its own error causes a much larger loss to the user."
+      }
+    ]
+  },
+  {
+    "id": "tos-04",
+    "category": "tos",
+    "is_clean": false,
+    "source": "synthetic",
+    "text": "TERMS OF SERVICE\n\nFor the Pathway Learning platform.\n\n1. Definitions. \"User Content\" means any content you submit, including quiz answers, forum posts, uploaded documents, and any personal information contained within them.\n\n2. Arbitration. Any dispute relating to these Terms or your User Content shall be resolved through binding individual arbitration. You waive the right to participate in any class action.\n\n3. Data Retention. We retain User Content, including any personal information it contains, indefinitely for \"platform improvement purposes,\" even after account deletion.\n\n4. Subscription. Monthly subscription of $19.99, cancel anytime through account settings.",
+    "ground_truth_issues": [
+      {
+        "category": "indefinite-retention-of-personal-data",
+        "severity": "medium",
+        "clause_excerpt": "We retain User Content, including any personal information it contains, indefinitely for \"platform improvement purposes,\" even after account deletion",
+        "why_its_a_trap": "This clause reads as a normal data-retention note on its own, but \"User Content\" was defined earlier to explicitly include personal information embedded in uploads and posts — meaning personal data specifically, not just anonymous usage content, is retained forever even after the user deletes their account. The privacy risk only becomes clear when the retention clause is read against the broader definition."
+      }
+    ]
+  },
+  {
+    "id": "tos-05",
+    "category": "tos",
+    "is_clean": true,
+    "source": "synthetic",
+    "text": "TERMS OF SERVICE\n\nFor the Driftwood Notes app.\n\nModifications: We may update these Terms from time to time. Material changes will be communicated by email and in-app notice at least 14 days before taking effect. Continuing to use the app after that period constitutes acceptance.\n\nContent License: You retain full ownership of any content you create. By using the app, you grant us a limited license to store, back up, and display your content back to you as part of providing the service. This license ends when you delete your content or close your account.\n\nAccount Termination: We may suspend an account for a clear Terms violation, with notice and an opportunity to respond, except in cases of imminent harm or legal requirement. You may close your account and export your data at any time.\n\nCancellation: Subscriptions can be cancelled at any time directly within the app, effective at the end of the current billing period.",
+    "ground_truth_issues": []
+  }
+]
