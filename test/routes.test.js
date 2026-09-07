@@ -92,6 +92,40 @@ describe('POST /api/analyze', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
+  test('accepts issues with a type of unfair_clause or missing_protection, and without type at all', async () => {
+    global.fetch = jest.fn().mockResolvedValue(validGroqResponse({
+      issues: [
+        { severity: 'high', category: 'non-compete', title: 'a', description: 'b', recommendation: 'c', type: 'unfair_clause' },
+        { severity: 'low', category: 'severance', title: 'd', description: 'e', recommendation: 'f', type: 'missing_protection' },
+        { severity: 'medium', category: 'other', title: 'g', description: 'h', recommendation: 'i' }, // no type — legacy/optional
+      ],
+    }));
+
+    const res = await request(app)
+      .post('/api/analyze')
+      .send({ scrubbedText: 'This is a short contract.' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.issues).toHaveLength(3);
+    expect(res.body.issues[0].type).toBe('unfair_clause');
+    expect(res.body.issues[1].type).toBe('missing_protection');
+    expect(res.body.issues[2].type).toBeUndefined();
+  });
+
+  test('rejects an issue with an invalid type value (schema enforcement)', async () => {
+    global.fetch = jest.fn().mockResolvedValue(validGroqResponse({
+      issues: [{ severity: 'high', category: 'x', title: 'y', description: 'z', recommendation: 'w', type: 'not-a-real-type' }],
+    }));
+
+    const res = await request(app)
+      .post('/api/analyze')
+      .send({ scrubbedText: 'This is a short contract.' });
+
+    // Invalid type is schema-invalid -> retried, then gives up (both attempts use the same bad mock)
+    expect(res.status).toBe(502);
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
   test('sets truncated: true when input exceeds the 8,000 character cap', async () => {
     global.fetch = jest.fn().mockResolvedValue(validGroqResponse());
 
