@@ -1,4 +1,5 @@
 require('dotenv').config();
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
@@ -21,6 +22,8 @@ app.use('/api/analyze', analyzeLimiter, analyzeRouter);
 app.use('/api/ocr', apiLimiter, ocrRouter);
 
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+
+app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')));
 
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
