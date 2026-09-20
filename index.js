@@ -25,6 +25,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().
 
 app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')));
 app.get('/support', (req, res) => res.sendFile(path.join(__dirname, 'public', 'support.html')));
+app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')));
 
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
