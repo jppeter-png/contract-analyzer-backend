@@ -343,7 +343,7 @@
       <span class="eyebrow">In short</span>
       <ul>
         <li>Your document is automatically scanned for personal identifiers before anything is sent for AI analysis. Emails, phone numbers, SSNs, and similar patterns are replaced, and names are replaced where detected. Detection isn't perfect, so you see a preview of exactly what will be sent.</li>
-        <li>The redacted text is sent to Groq, a third-party AI service, to write your analysis — and only after you tap Allow in the app.</li>
+        <li>The redacted text is sent to Groq, a third-party AI service, to write your analysis — and only after you tap Allow in the app. We've turned on Groq's zero-data-retention setting, so Groq doesn't store it.</li>
         <li>We don't store your documents. Text and images are processed per request and discarded once your report is returned.</li>
         <li>Your analysis history lives only on your device. We don't upload it, sync it, or see it.</li>
         <li>Ads, when shown, are non-personalized — no cross-app tracking, no tracking permission prompt needed.</li>
@@ -373,6 +373,7 @@
       <h2>What We Don't Store</h2>
       <ul>
         <li>We do not retain your uploaded documents, pasted text, or photographs after your report is generated.</li>
+        <li>Groq does not store the text we send it: Zero Data Retention is enabled on our account.</li>
         <li>We do not create user accounts, so we hold no login credentials, usernames, or persistent profiles tied to you.</li>
         <li>We do not sell your data to anyone, for any reason.</li>
       </ul>
@@ -407,7 +408,7 @@
         <li><strong>What is not sent:</strong> your original file or photo, your name or contact details (we don't collect any), device identifiers, or your analysis history.</li>
       </ul>
       <p>Redaction is automatic and targets common identifiers such as names, email addresses, phone numbers, and Social Security numbers. It can miss details, for example unusual formats or free-text references to a person or place, so the review screen shows a preview of the exact text that will be sent. Please don't submit a document you aren't comfortable sending.</p>
-      <p>Groq handles the data it receives under its own terms and privacy policy, available at groq.com. We send it only what is listed above, and only to generate your analysis.</p>
+      <p>We have turned on Groq's Zero Data Retention setting for our account. That opts out of Groq storing the text we send and the analysis it returns, so Groq does not keep your document text after your analysis is generated. Groq's handling of data is otherwise governed by its own terms and privacy policy, available at groq.com. We send it only what is listed above, and only to generate your analysis.</p>
       <p class="muted">You can turn this permission off at any time with the "Manage" link on the app's home screen. You'll be asked again before your next analysis.</p>
     </section>
 
