@@ -1,59 +1,51 @@
-const nlp = require('compromise');
+const { findStructured, LABEL_ORDER } = require('./pii/structured');
+const { detectNames } = require('./pii/names');
 
-const PII_RULES = [
-  { label: 'Email addresses',        regex: /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g,    tag: '[EMAIL]' },
-  { label: 'Phone numbers',          regex: /(\+?1[\s.\-]?)?\(?\d{3}\)?[\s.\-]\d{3}[\s.\-]\d{4}/g,   tag: '[PHONE]' },
-  { label: 'Social Security Numbers',regex: /\b\d{3}[- ]\d{2}[- ]\d{4}\b/g,                           tag: '[SSN]' },
-  { label: 'Credit card numbers',    regex: /\b(?:\d{4}[ \-]?){3}\d{4}\b/g,                           tag: '[CC]' },
-  { label: 'IP addresses',           regex: /\b(?:\d{1,3}\.){3}\d{1,3}\b/g,                           tag: '[IP]' },
-  { label: 'Medical record numbers', regex: /\b(?:MRN|MR#?)\s*:?\s*\d+/gi,                            tag: '[MRN]' },
-  { label: 'NPI numbers',            regex: /\bNPI\s*:?\s*\d{10}\b/gi,                                tag: '[NPI]' },
-  { label: 'DEA numbers',            regex: /\bDEA\s*:?\s*[A-Z]{2}\d{7}\b/gi,                        tag: '[DEA]' },
-  { label: 'Date of birth patterns', regex: /\b(?:DOB|Date of Birth)\s*:?\s*\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/gi, tag: '[DOB]' },
-  { label: 'EIN / Tax IDs',          regex: /\b\d{2}-\d{7}\b/g,                                       tag: '[EIN]' },
-];
+// Every detector reports spans against the ORIGINAL text. Overlaps are settled
+// by priority (an email beats the name inside it), then by length, and only then
+// is the text rebuilt — so placeholders never confuse a later detector.
+function resolveOverlaps(spans, length) {
+  const ranked = spans.slice().sort((a, b) =>
+    b.priority - a.priority || (b.end - b.start) - (a.end - a.start) || a.start - b.start);
+  const taken = new Uint8Array(length);
+  const kept = [];
+  for (const span of ranked) {
+    let free = true;
+    for (let i = span.start; i < span.end; i++) {
+      if (taken[i]) { free = false; break; }
+    }
+    if (!free) continue;
+    taken.fill(1, span.start, span.end);
+    kept.push(span);
+  }
+  return kept.sort((a, b) => a.start - b.start);
+}
 
 function scrubPII(text) {
-  let scrubbed = text;
-  const findings = [];
+  const spans = resolveOverlaps([...findStructured(text), ...detectNames(text)], text.length);
 
-  // Step 1: Regex-based PII
-  for (const { label, regex, tag } of PII_RULES) {
-    const fresh = new RegExp(regex.source, regex.flags);
-    const matches = scrubbed.match(fresh);
-    if (matches?.length) {
-      findings.push({ label, count: matches.length, redacted: [...new Set(matches)] });
-      scrubbed = scrubbed.replace(new RegExp(regex.source, regex.flags), tag);
-    }
+  let scrubbed = '';
+  let cursor = 0;
+  const byLabel = new Map();
+  for (const span of spans) {
+    scrubbed += text.slice(cursor, span.start) + span.tag;
+    cursor = span.end;
+
+    const original = text.slice(span.start, span.end);
+    const entry = byLabel.get(span.label) || { label: span.label, count: 0, seen: new Set() };
+    entry.count += 1;
+    entry.seen.add(original);
+    byLabel.set(span.label, entry);
   }
+  scrubbed += text.slice(cursor);
 
-  // Step 2: NLP-based name detection
-  try {
-    const doc = nlp(scrubbed);
-    const uniqueNames = [...new Set(doc.people().out('array').filter(n => n.trim().length > 2))];
-
-    if (uniqueNames.length > 0) {
-      let nameCount = 0;
-      const redactedNames = [];
-
-      for (const name of uniqueNames) {
-        const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const nameRegex = new RegExp(`\\b${escaped}\\b`, 'g');
-        const matches = scrubbed.match(nameRegex);
-        if (matches?.length) {
-          nameCount += matches.length;
-          redactedNames.push(name);
-          scrubbed = scrubbed.replace(nameRegex, '[NAME]');
-        }
-      }
-
-      if (nameCount > 0) {
-        findings.push({ label: 'Person names', count: nameCount, redacted: redactedNames });
-      }
-    }
-  } catch (err) {
-    console.warn('NLP name detection failed:', err.message);
-  }
+  const order = [...LABEL_ORDER, 'Person names'];
+  const findings = order
+    .filter(label => byLabel.has(label))
+    .map(label => {
+      const { count, seen } = byLabel.get(label);
+      return { label, count, redacted: [...seen] };
+    });
 
   return { scrubbed, findings };
 }
