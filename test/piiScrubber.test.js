@@ -65,13 +65,10 @@ describe('scrubPII — international phone formats', () => {
     expect(findings).toContainEqual({ label: 'Phone numbers', count: 1, redacted: ['+1 415-555-2671'] });
   });
 
-  // KNOWN LIMITATION: the phone regex only recognizes US-style NANP formats
-  // (optional +1, 3-3-4 digit grouping). International numbers pass through
-  // completely unredacted.
-  test('KNOWN LIMITATION: non-US phone formats are not redacted at all', () => {
+  test('non-US phone formats are redacted too', () => {
     const { scrubbed, findings } = scrubPII('Call the UK office at +44 20 7946 0958 for support.');
-    expect(scrubbed).toContain('+44 20 7946 0958');
-    expect(findings).toEqual([]);
+    expect(scrubbed).toBe('Call the UK office at [PHONE] for support.');
+    expect(findings).toContainEqual({ label: 'Phone numbers', count: 1, redacted: ['+44 20 7946 0958'] });
   });
 });
 
@@ -89,20 +86,9 @@ describe('scrubPII — names near other PII', () => {
     expect(scrubbed).not.toContain('@example.com');
   });
 
-  // KNOWN LIMITATION: NLP-based name detection (the `compromise` library) is
-  // sentence-structure-dependent and can silently miss names — e.g. a name
-  // immediately preceded by a role/title noun and followed by a comma. There is
-  // no fallback here, so a missed name is a silent PII leak, not an error.
-  test('KNOWN LIMITATION: NLP name detection can miss a name depending on sentence structure', () => {
+  test('catches a name right after a role noun, even before a comma', () => {
     const { scrubbed, findings } = scrubPII('Employee Jane Doe, phone +1 415-555-2671, email jane.doe@corp.com.');
-    // Email and phone are still caught by regex...
-    expect(scrubbed).toContain('[EMAIL]');
-    expect(scrubbed).toContain('[PHONE]');
-    // ...but the name is not reliably caught — this assertion documents the gap
-    // rather than a desired behavior. If compromise improves and starts catching
-    // this, this test should be updated to require it.
-    const nameFinding = findings.find(f => f.label === 'Person names');
-    expect(nameFinding).toBeUndefined();
-    expect(scrubbed).toContain('Jane Doe');
+    expect(scrubbed).toBe('Employee [NAME], phone [PHONE], email [EMAIL].');
+    expect(findings.find(f => f.label === 'Person names').redacted).toEqual(['Jane Doe']);
   });
 });

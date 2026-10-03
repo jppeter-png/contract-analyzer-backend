@@ -58,7 +58,14 @@ backend/
 │   ├── predictions.json        # Raw per-entry output from the latest run (gitignored)
 │   └── manual-test-contracts/  # Same 30 contracts as standalone .txt files, for trying by hand
 └── src/
-    ├── piiScrubber.js        # Regex + NLP-based PII redaction
+    ├── piiScrubber.js        # PII redaction: runs every detector, resolves overlaps, rebuilds the text
+    ├── pii/
+    │   ├── structured.js     # Validated patterns: email, phone (US + intl), SSN, cards (Luhn), IBAN,
+    │   │                     #   addresses, bank/ID numbers, DOB, VIN, IPs, social handles
+    │   ├── names.js          # Evidence-scored person-name detection (cues, lexicon, signature blocks)
+    │   ├── lexicon.js        # Per-token first/last-name evidence from compromise
+    │   ├── stoplist.js       # Legal boilerplate / organization words that are never names
+    │   └── validators.js     # Luhn, IBAN mod-97, IPv4 range checks
     ├── textExtractor.js      # PDF / DOCX / TXT parsing
     └── routes/
         ├── scrub.js          # POST /api/scrub
@@ -136,7 +143,16 @@ Each issue's `type` is `unfair_clause` (an actual clause is present and disadvan
 npm test
 ```
 
-Covers `piiScrubber.js` regex edge cases (phone numbers that look like SSNs, international formats, names adjacent to redacted PII — including documented false-positive/false-negative limitations) and integration tests for `/api/scrub` and `/api/analyze` (Groq calls mocked, no API cost).
+Covers `piiScrubber.js` (recall cases that must be redacted and must not leak, precision cases that must be left alone, overlap handling, and performance) and integration tests for `/api/scrub` and `/api/analyze` (Groq calls mocked, no API cost).
+
+### How PII detection works
+
+Every detector reports spans against the **original** text; overlaps are resolved by priority (an email beats the name inside it) and the text is rebuilt once, so one detector's placeholder can never confuse another.
+
+- **Structured identifiers** use patterns plus validation where one exists (Luhn for cards, mod-97 for IBANs, octet range for IPs), so look-alikes such as `0000 0000 0000 0000` or section number `4.2.1.3` aren't flagged.
+- **Names** are scored from several independent signals rather than trusting one: honorifics (`Mr. Okafor`), role/label cues (`Tenant Jane Doe`, `Name:`), defined terms (`Jane Doe ("Tenant")`), `between X and Y`, signature blocks, name-shaped email local-parts (`priya.raman@…`), and a first/last-name lexicon. A legal-boilerplate stoplist, organization-word and corporate-suffix filters, and title-continuation checks (`John Hancock Insurance`, `…King Jr. Day`) keep contract text from being over-redacted. Once a name is accepted, every later mention (full name, surname, `Last, First`) is redacted too.
+
+**Known limits:** name detection depends on capitalization, so an all-lowercase name (`mr. sanchez`) is not caught; a name with no cue and no lexicon support (rare surname, first mention, plain sentence) can be missed until it is mentioned again with a cue; international address formats beyond US/UK/Canada are not recognized. Redaction is a safeguard, not a guarantee, which is why the app shows users exactly what will be sent before anything leaves their device.
 
 ## Evaluation
 
