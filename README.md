@@ -95,6 +95,8 @@ Returns scrubbed text and PII findings — no AI call yet.
 ### `POST /api/ocr`
 Accepts up to 20 images (`multipart/form-data`, field name `images`). Runs Tesseract OCR on each page in order and joins the results. The extracted text is then passed to `/api/scrub` like any other input.
 
+Optional form field `languages` (e.g. `es` or `fr,de`; codes `en es fr de pt`) adds those Tesseract language packs to English, which is always included. At most three are loaded per request and unknown codes are ignored. The first request for a language downloads its pack, so it is slower than later ones.
+
 **Response:**
 ```json
 {
@@ -105,7 +107,9 @@ Accepts up to 20 images (`multipart/form-data`, field name `images`). Runs Tesse
 ```
 
 ### `POST /api/analyze`
-Accepts `{ scrubbedText, contractType, chunkContext }`. `contractType` is one of `auto | employment | nda | lease | service | loan | tos` (defaults to `auto`). Calls Groq (GPT-OSS 120B) and returns the risk analysis. Input is capped at 8,000 characters per call.
+Accepts `{ scrubbedText, contractType, chunkContext, outputLanguage }`. `contractType` is one of `auto | employment | nda | lease | service | loan | tos` (defaults to `auto`). Calls Groq (GPT-OSS 120B) and returns the risk analysis. Input is capped at 8,000 characters per call.
+
+`outputLanguage` (optional: `en | es | fr | de | pt`) is the language the user reads. The model writes every human-readable field in it, whatever language the contract is in, while the JSON keys and the `high | medium | low` and `type` values stay English so clients can rely on them. Omitted, the prompt is unchanged.
 
 `chunkContext` (optional, `{ index, total }`) is set by a client that has split a longer contract into sections — it tells the model this text is one section of a longer document, so it doesn't report clauses as "missing" just because they're in a different section, and doesn't assume this section is the whole contract. There's no separate "chunked" endpoint; a client analyzing a long contract in full just calls this repeatedly with `chunkContext` set and paces the requests itself (see the mobile repo's README for that flow).
 
@@ -152,7 +156,9 @@ Every detector reports spans against the **original** text; overlaps are resolve
 - **Structured identifiers** use patterns plus validation where one exists (Luhn for cards, mod-97 for IBANs, octet range for IPs), so look-alikes such as `0000 0000 0000 0000` or section number `4.2.1.3` aren't flagged.
 - **Names** are scored from several independent signals rather than trusting one: honorifics (`Mr. Okafor`), role/label cues (`Tenant Jane Doe`, `Name:`), defined terms (`Jane Doe ("Tenant")`), `between X and Y`, signature blocks, name-shaped email local-parts (`priya.raman@…`), and a first/last-name lexicon. A legal-boilerplate stoplist, organization-word and corporate-suffix filters, and title-continuation checks (`John Hancock Insurance`, `…King Jr. Day`) keep contract text from being over-redacted. Once a name is accepted, every later mention (full name, surname, `Last, First`) is redacted too.
 
-**Known limits:** name detection depends on capitalization, so an all-lowercase name (`mr. sanchez`) is not caught; a name with no cue and no lexicon support (rare surname, first mention, plain sentence) can be missed until it is mentioned again with a cue; international address formats beyond US/UK/Canada are not recognized. Redaction is a safeguard, not a guarantee, which is why the app shows users exactly what will be sent before anything leaves their device.
+**Languages.** Spanish, French, German and Portuguese are supported alongside English, without guessing the document's language first (contracts are often bilingual, so every language's cues run on every document). Patterns are Unicode-aware, so `José`, `Müller` and `Gonçalves` are names like any other. Per language, `src/pii/langs.js` holds the role cues (`arrendatario`, `locataire`, `Mieter`, `locatário`), label cues, honorifics (`Sr.`, `Mme`, `Herr`), salutations, legal stop words, organization words and common first names and surnames. `structured.js` adds local address, phone and date-of-birth formats, and national IDs with checksum validators (Spanish DNI/NIE, Brazilian CPF, Portuguese NIF, French social security number) so they are caught even without a label. Add a language by adding a pack to `langs.js`, rules to `structured.js`, and cases to `test/piiMultilingual.test.js`.
+
+**Known limits:** name detection depends on capitalization, so an all-lowercase name (`mr. sanchez`) is not caught; a name with no cue and no lexicon support (rare surname, first mention, plain sentence) can be missed until it is mentioned again with a cue — this is more likely outside English, where the first-name and surname lists are shorter; German capitalizes every noun, so a short noun phrase directly after a role word (`Mieter Kleine Reparaturen`) can be over-redacted; unlabeled local phone numbers are only recognized in a few formats (French `06 12 34 56 78`, Spanish/Portuguese `612 345 678`), otherwise they need a label such as `Teléfono:`; address formats outside the US/UK/Canada and the four languages above are not recognized. Redaction is a safeguard, not a guarantee, which is why the app shows users exactly what will be sent before anything leaves their device.
 
 ## Evaluation
 

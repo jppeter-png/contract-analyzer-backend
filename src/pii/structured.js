@@ -1,4 +1,4 @@
-const { digitsOf, luhn, validIpv4, validIban } = require('./validators');
+const { digitsOf, luhn, validIpv4, validIban, validDni, validNie, validCpf, validNifPt, validNir } = require('./validators');
 
 const MONTH = '(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)';
 const DATE = `(?:\\d{1,2}[\\/\\-.]\\d{1,2}[\\/\\-.]\\d{2,4}|\\d{4}-\\d{2}-\\d{2}|${MONTH}\\.?[ \\t]+\\d{1,2}(?:st|nd|rd|th)?,?[ \\t]+\\d{4}|\\d{1,2}(?:st|nd|rd|th)?[ \\t]+${MONTH}\\.?,?[ \\t]+\\d{4})`;
@@ -10,8 +10,61 @@ const STATES = 'AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|M
 const CITY_STATE_ZIP = `[A-Z][A-Za-z.'’\\-]+(?:[ \\t]+[A-Z][A-Za-z.'’\\-]+){0,2},?[ \\t]+(?:${STATES})\\.?,?[ \\t]+\\d{5}(?:-\\d{4})?`;
 const UNIT = '(?:Apt|Apartment|Suite|Ste|Unit|Floor|Fl|Room|Rm|Bldg|Building|APT|SUITE|STE|UNIT)';
 
-const SECTION_CONTEXT = /(?:section|sec\.?|clause|article|§|paragraph|para\.?|schedule|exhibit|item|step|version|ver\.?|v)\s*$/i;
-const CARD_CONTEXT = /(?:card|visa|mastercard|master card|amex|american express|discover|debit|credit)[^\n]{0,30}$/i;
+const SECTION_CONTEXT = /(?:section|sec\.?|clause|article|§|paragraph|para\.?|schedule|exhibit|item|step|version|ver\.?|v|art[ií]culo|art\.|cl[aá]usula|apartado|punto|anexo|artikel|abs\.|absatz|ziffer|artigo|cl[aá]usula|n[ºo°]\.?)\s*$/i;
+const CARD_CONTEXT = /(?:card|visa|mastercard|master card|amex|american express|discover|debit|credit|tarjeta|carte|karte|kreditkarte|cart[ãa]o|d[ée]bito|cr[ée]dito)[^\n]{0,30}$/i;
+
+
+// ---- shared pieces for the Spanish / French / German / Portuguese rules -------------------
+const ciw = w => w.split('').map(c => (/\p{L}/u.test(c) && c.toLowerCase() !== c.toUpperCase() && c.toUpperCase().length === 1
+  ? `[${c.toLowerCase()}${c.toUpperCase()}]` : c.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&'))).join('');
+const alts = list => list.map(ciw).join('|');
+
+const MONTH_INTL = `(?:${alts([
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'setiembre', 'octubre', 'noviembre', 'diciembre',
+  'janvier', 'février', 'fevrier', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'aout', 'septembre', 'octobre', 'novembre', 'décembre', 'decembre',
+  'januar', 'februar', 'märz', 'maerz', 'april', 'juni', 'juli', 'august', 'oktober', 'dezember',
+  'janeiro', 'fevereiro', 'março', 'marco', 'maio', 'junho', 'julho', 'setembro', 'outubro', 'dezembro',
+])})`;
+const DATE_INTL =
+  `(?:\\d{1,2}[\\/\\-.]\\d{1,2}[\\/\\-.]\\d{2,4}|\\d{4}-\\d{2}-\\d{2}|` +
+  `\\d{1,2}(?:\\.|º|°|er|\\.º)?[ \\t]+(?:de[ \\t]+|d['’])?${MONTH_INTL}\\.?[ \\t]+(?:de[ \\t]+)?\\d{4}|` +
+  `${MONTH_INTL}[ \\t]+\\d{1,2},?[ \\t]+\\d{4})`;
+const INTL_DOB_CUES = `(?:fecha[ \\t]+de[ \\t]+nacimiento|f\\.[ \\t]*(?:de[ \\t]+)?nac\\.?|nacid[oa](?:[ \\t]+(?:el|en))?|` +
+  `date[ \\t]+de[ \\t]+naissance|n[ée]e?(?:\\(e\\))?[ \\t]+le|geburtsdatum|geboren(?:[ \\t]+am)?|geb\\.(?:[ \\t]+am)?|` +
+  `data[ \\t]+de[ \\t]+nascimento|nascid[oa](?:[ \\t]+em)?|nasc\\.)`;
+
+const INTL_ID_LABELS = [
+  'DNI', 'NIE', 'NIF', 'CIF', 'NIPC', 'CPF', 'CNPJ', 'CNH', 'CNI', 'pasaporte', 'passaporte', 'passeport', 'Reisepass',
+  'Personalausweis', 'Ausweis', 'Führerschein', 'Fuhrerschein', 'Steuer-?ID', 'Steueridentifikationsnummer', 'Steuernummer',
+  'St\\.?-?Nr', 'Sozialversicherungsnummer', 'SV-Nummer', 'seguridad[ \\t]+social', 's[ée]curit[ée][ \\t]+sociale',
+  'seguran[çc]a[ \\t]+social', 'carte[ \\t]+(?:nationale[ \\t]+)?d[\'’]identit[ée]', 'c[ée]dula', 'cart[ãa]o[ \\t]+de[ \\t]+cidad[ãa]o',
+  'bilhete[ \\t]+de[ \\t]+identidade', 'documento[ \\t]+de[ \\t]+identidad', 'contribuinte', 'matr[ií]cula',
+  'n[úu]mero[ \\t]+de[ \\t]+(?:documento|afiliaci[óo]n|socio|cliente|p[óo]liza|ap[óo]lice|contribuinte)',
+  'num[ée]ro[ \\t]+de[ \\t]+(?:client|police|membre|dossier|s[ée]curit[ée])',
+  'Kundennummer', 'Mitgliedsnummer', 'Versicherungsnummer', 'Policennummer', 'Patientennummer', 'Mitarbeiternummer',
+].join('|');
+const INTL_BANK_LABELS = [
+  'cuenta(?:[ \\t]+bancaria)?', 'n[úu]mero[ \\t]+de[ \\t]+cuenta', 'c\\/c', 'compte(?:[ \\t]+bancaire)?', 'RIB', 'Konto(?:nummer)?',
+  'Bankverbindung', 'BLZ', 'Bankleitzahl', 'conta(?:[ \\t]+banc[áa]ria|[ \\t]+corrente)?', 'NIB', 'ag[êe]ncia', 'CLABE', 'IBAN',
+].join('|');
+const INTL_PHONE_LABELS = [
+  'tel[ée]fono', 'tfno', 'tlf', 'm[óo]vil', 'celular', 't[ée]l[ée]phone', 'portable', 'mobil', 'handy', 'telefon', 'telem[óo]vel', 'contacto',
+  'tel', 'fax', 'phone', 'mobile', 'cell', 'whatsapp',
+].join('|');
+
+const NAME_WORD = `[\\p{Lu}\\d][\\p{L}\\d'’\\-]*`;
+const LOWER_LINK = `(?:(?:de(?:l)?|da|do|das|dos|la|las|los|y|e|d['’])[ \\t]+)`;
+const POSTAL_CITY = `(?:\\d{5}|\\d{4}-\\d{3})[ \\t]+\\p{Lu}[\\p{L}'’\\-]+(?:[ \\t]+\\p{Lu}[\\p{L}'’\\-]+){0,2}`;
+const IBERIAN_STREET = alts([
+  'calle', 'c/', 'avenida', 'avda', 'av', 'paseo', 'plaza', 'pza', 'camino', 'carretera', 'ctra', 'ronda', 'travesía',
+  'travesia', 'glorieta', 'urbanización', 'urbanizacion', 'urb', 'carrer', 'calzada', 'bulevar', 'callejón', 'callejon',
+  'rua', 'travessa', 'praça', 'praca', 'largo', 'estrada', 'alameda', 'beco', 'rodovia', 'caminho',
+]);
+const FRENCH_STREET = alts([
+  'rue', 'avenue', 'av', 'boulevard', 'bd', 'chemin', 'impasse', 'allée', 'allee', 'place', 'quai', 'route', 'cours',
+  'passage', 'square', 'cité', 'cite', 'rond-point', 'voie', 'villa', 'sentier', 'esplanade',
+]);
+const GERMAN_STREET_END = 'straße|strasse|str\\.|weg|allee|platz|gasse|ring|damm|ufer|chaussee|steig|pfad|markt|hof|park|STRASSE|STRAßE|STR\\.';
 
 // Each rule: regex (matched against the ORIGINAL text), label shown in the app,
 // placeholder tag, overlap priority (higher wins), optional capture group that
@@ -58,7 +111,7 @@ const RULES = [
   { label: 'Bank account numbers', tag: '[ACCOUNT]', priority: 90, group: 1,
     regex: /\b(?:(?:bank[ \t]+)?account|acct|a\/c|routing|ABA|sort[ \t]+code|IBAN|SWIFT|BIC)\b\.?[ \t]*(?:number|no\.?|num|#|code)?[ \t]*[:#\-]?[ \t]*(\d[\d \-]{4,30}\d|[A-Z]{2}\d{2}[A-Z0-9 ]{10,30})/gi,
     validate: value => digitsOf(value).length >= 6 },
-  { label: 'Bank account numbers', tag: '[ACCOUNT]', priority: 90,
+  { label: 'Bank account numbers', tag: '[ACCOUNT]', priority: 96, // a checksum-valid IBAN beats look-alike phone fragments
     regex: /\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]{4}){2,7}(?:[ ]?[A-Z0-9]{1,4})?\b/g,
     validate: validIban },
 
@@ -98,6 +151,76 @@ const RULES = [
     regex: /(?<![\w@.])@[A-Za-z_][A-Za-z0-9_]{2,14}\b/g },
 
   { label: 'EIN / Tax IDs', tag: '[EIN]', priority: 60, regex: /\b\d{2}-\d{7}\b/g },
+
+  // ---- Spanish, French, German and Portuguese ------------------------------------------
+
+  // National IDs that carry their own checksum are recognized without any label.
+  { label: 'ID numbers', tag: '[ID]', priority: 88,
+    regex: /(?<![\w-])\d{8}[ \-]?[A-Za-z](?!\w)/g, validate: validDni },
+  { label: 'ID numbers', tag: '[ID]', priority: 88,
+    regex: /(?<![\w-])[XYZxyz][ \-]?\d{7}[ \-]?[A-Za-z](?!\w)/g, validate: validNie },
+  { label: 'ID numbers', tag: '[ID]', priority: 88,
+    regex: /(?<![\d.])\d{3}\.\d{3}\.\d{3}-\d{2}(?!\d)/g, validate: validCpf },
+  { label: 'Social Security Numbers', tag: '[SSN]', priority: 100,
+    regex: /(?<!\d)[12](?:[ .]?\d{2}){2}[ .]?\d{2}[ .]?\d{3}[ .]?\d{3}[ .]?\d{2}(?!\d)/g, validate: validNir },
+  { label: 'EIN / Tax IDs', tag: '[EIN]', priority: 60, regex: /(?<![\d.])\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}(?!\d)/g },
+
+  // The same kinds of numbers when a label names them (DNI, NIF, Steuer-ID, passeport...).
+  { label: 'ID numbers', tag: '[ID]', priority: 88, group: 1,
+    regex: new RegExp(
+      `(?<!\\p{L})(?:${INTL_ID_LABELS})(?!\\p{L})\\.?[ \\t]*(?:n[úuº°o]\\.?|nr\\.?|no\\.?|num\\.?|número|numero|numéro|nummer|#)?[ \\t]*[:#\\-]?[ \\t]*` +
+      `(\\d[\\d .\\-]{2,22}\\d|[A-Z]{1,2}\\d[A-Z0-9\\-]{3,18})`, 'giu'),
+    validate: value => digitsOf(value).length >= 4 },
+  { label: 'ID numbers', tag: '[ID]', priority: 88, group: 1,
+    regex: /(?<!\p{L})(?:NIF|NIPC|contribuinte)(?!\p{L})\.?[ \t]*[:#\-]?[ \t]*(\d{9})(?!\d)/giu, validate: validNifPt },
+
+  { label: 'Bank account numbers', tag: '[ACCOUNT]', priority: 90, group: 1,
+    regex: new RegExp(
+      `(?<!\\p{L})(?:${INTL_BANK_LABELS})(?!\\p{L})\\.?[ \\t]*(?:n[úuº°o]\\.?|nr\\.?|no\\.?|num\\.?|número|numero|numéro|nummer|#)?[ \\t]*[:#\\-]?[ \\t]*` +
+      `(\\d[\\d \\-.]{4,30}\\d)`, 'giu'),
+    validate: value => digitsOf(value).length >= 6 },
+
+  // Local phone formats: French 01 23 45 67 89, Spanish/Portuguese 612 345 678, and labeled numbers.
+  { label: 'Phone numbers', tag: '[PHONE]', priority: 95,
+    regex: /(?<![\d.])0[1-9](?:[ .\-]?\d{2}){4}(?!\d)/g },
+  { label: 'Phone numbers', tag: '[PHONE]', priority: 95,
+    regex: /(?<![\d.,])[26789]\d{2}[ \-]\d{3}[ \-]\d{3}(?![\d.,])/g,
+    validate: value => !/(?:^|[ \-])000$/.test(value) },
+  { label: 'Phone numbers', tag: '[PHONE]', priority: 95,
+    regex: /(?<![\d.,])[6789]\d{2}[ ]\d{2}[ ]\d{2}[ ]\d{2}(?![\d.,])/g },
+  { label: 'Phone numbers', tag: '[PHONE]', priority: 95, group: 1,
+    regex: new RegExp(`(?<!\\p{L})(?:${INTL_PHONE_LABELS})(?!\\p{L})\\.?[^\\n\\d]{0,15}?(\\+?\\d[\\d ().\\-\\/]{7,18}\\d)(?![\\d])`, 'giu'),
+    validate: value => { const n = digitsOf(value).length; return n >= 9 && n <= 15; } },
+
+  // Date of birth with local cue words ("nacido el 4 de marzo de 1985", "né le 4 mars 1985", "geboren am 4. März 1985").
+  { label: 'Date of birth patterns', tag: '[DOB]', priority: 92,
+    regex: new RegExp(`(?<!\\p{L})${INTL_DOB_CUES}[ \\t]*[:\\-]?[ \\t]*${DATE_INTL}`, 'giu') },
+
+  // Street addresses.
+  // Spanish / Portuguese: "Calle Mayor, 12, 3º B, 28013 Madrid" · "Rua das Flores, 45, 1000-001 Lisboa"
+  { label: 'Street addresses', tag: '[ADDRESS]', priority: 80,
+    regex: new RegExp(
+      `(?<!\\p{L})(?:${IBERIAN_STREET})\\.?[ \\t]+${LOWER_LINK}{0,2}${NAME_WORD}(?:[ \\t]+${LOWER_LINK}{0,2}${NAME_WORD}){0,4}` +
+      `[,.]?[ \\t]*(?:(?:n[ºo°]\\.?|núm\\.?|num\\.?)[ \\t]*)?\\d{1,5}(?:[ \\t]*[-–][ \\t]*\\d{1,5})?` +
+      `(?:[ \\t]*[,º°ª.]*[ \\t]*(?:\\d{1,2}[º°ª.]{0,2}[ \\t]*[A-Za-z](?![\\p{L}])|\\d{1,2}[º°ª]|bajo|bis|esq\\.?|dto\\.?|[A-Z](?!\\p{L})))?` +
+      `(?:,?[ \\t]*${POSTAL_CITY})?`, 'gu') },
+  // French: "12 rue de la Paix, 75002 Paris"
+  { label: 'Street addresses', tag: '[ADDRESS]', priority: 80,
+    regex: new RegExp(
+      `(?<!\\d)\\d{1,4}(?:[ \\t]?(?:bis|ter))?,?[ \\t]+(?:${FRENCH_STREET})[ \\t]+(?:(?:des?|du|la|le|les|l['’]|d['’])[ \\t]*)?${NAME_WORD}` +
+      `(?:[ \\t]+(?:(?:des?|du|la|le|les|et)[ \\t]+|[dl]['’])?${NAME_WORD}){0,4}(?:,?[ \\t]*${POSTAL_CITY})?`, 'giu') },
+  // German: "Hauptstraße 12", "Berliner Str. 5a, 10115 Berlin", "Am Markt 3"
+  { label: 'Street addresses', tag: '[ADDRESS]', priority: 80,
+    regex: new RegExp(
+      `(?<!\\p{L})(?:(?:Am|An|Auf|Im|In|Zum|Zur|Unter|Hinter|Vor)[ \\t]+(?:der|dem|den|die|das)?[ \\t]*)?\\p{Lu}[\\p{L}\\-]*(?:${GERMAN_STREET_END})[ \\t]+\\d{1,4}[ \\t]?[a-z]?(?![\\p{L}\\d])` +
+      `(?:,?[ \\t]*${POSTAL_CITY})?`, 'gu') },
+  { label: 'Street addresses', tag: '[ADDRESS]', priority: 80,
+    regex: new RegExp(
+      `(?<!\\p{L})\\p{Lu}[\\p{L}\\-]+[ \\t]+(?:Straße|Strasse|Str\\.|Weg|Allee|Platz|Gasse|Ring|Damm|Ufer|Chaussee)[ \\t]+\\d{1,4}[ \\t]?[a-z]?(?![\\p{L}\\d])` +
+      `(?:,?[ \\t]*${POSTAL_CITY})?`, 'gu') },
+  // Postal codes named by a label ("CP 28013", "PLZ 10115", "CEP 01310-100")
+  { label: 'Street addresses', tag: '[ADDRESS]', priority: 78, group: 1,
+    regex: /(?<!\p{L})(?:C\.?P\.?|PLZ|CEP|Postleitzahl|c[óo]digo[ \t]+postal|code[ \t]+postal)(?!\p{L})[ \t]*[:.]?[ \t]*(\d{4,5}(?:-\d{3,4})?)/giu },
 ];
 
 // Order in which finding labels are reported to the app (names come last).

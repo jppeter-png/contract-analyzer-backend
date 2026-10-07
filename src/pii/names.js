@@ -1,35 +1,51 @@
 const nlp = require('compromise');
 const { isFirstName, isLastName, isCommonWord, titleCase } = require('./lexicon');
+const { fold } = require('./langs');
 const {
   LEGAL_STOP, ORG_WORDS, PARTICLES, ORGISH_DEFINED_TERMS, ROLE_CUES, LABEL_CUES,
-  HONORIFICS, GENERIC_EMAIL_LOCALS, SIGNATURE_CONTEXT,
+  HONORIFICS, STRICT_HONORIFICS, SALUTATIONS, BETWEEN_WORDS, AND_WORDS, GENERIC_EMAIL_LOCALS,
+  SIGNATURE_CONTEXT,
 } = require('./stoplist');
 
 const ACCEPT_THRESHOLD = 3;
 const PEOPLE_SCAN_LIMIT = 500000; // compromise is the slow part; cap its input
 
+// Every pattern here is Unicode-aware (flag "u"), so José, Müller, Gonçalves and
+// Łukasz are names just like Smith — [A-Z] would not even match them.
+const rx = (source, flags = '') => new RegExp(source, flags.includes('u') ? flags : flags + 'u');
+const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 // Case-insensitive literal, so cue words match as "Tenant", "TENANT" or "tenant"
 // while the NAME that follows must still look like a name (capitalized).
 const ci = word => word.split('').map(c => {
   if (c === ' ') return '[ \\t]+';
-  if (/[a-z]/i.test(c)) return `[${c.toLowerCase()}${c.toUpperCase()}]`;
-  return c.replace(/[-.]/g, '\\$&');
+  if (/\p{L}/u.test(c)) {
+    const lo = c.toLowerCase();
+    const up = c.toUpperCase();
+    return lo === up || up.length !== 1 ? c : `[${lo}${up}]`; // ß uppercases to "SS"
+  }
+  return escapeRe(c);
 }).join('');
 const alt = words => words.map(ci).join('|');
 
-const NAME_TOKEN = "(?:[A-Z]['’][A-Z][a-z]+|[A-Z][a-z]+(?:[A-Z][a-z]+)*(?:['’\\-][A-Za-z]+)*|[A-Z]{2,}(?:['’\\-][A-Z]+)*|[A-Z]\\.)";
+const LETTER = '\\p{L}';
+const UP = '\\p{Lu}';
+const LO = '\\p{Ll}';
+const NAME_TOKEN =
+  `(?:${UP}['’]${UP}${LO}+|(?:d['’])?${UP}${LO}+(?:${UP}${LO}+)*(?:['’\\-]${LETTER}+)*|${UP}{2,}(?:['’\\-]${UP}+)*|${UP}\\.)`;
 const PARTICLE_ALT = [...PARTICLES].join('|');
-const SUFFIX = '(?:,?[ \\t]+(?:Jr|Sr|II|III|IV|Esq|Ph\\.?D|M\\.?D)\\.?(?![A-Za-z]))?';
-const PHRASE = `(?<![A-Za-z])${NAME_TOKEN}(?:[ \\t]+(?:(?:${PARTICLE_ALT})[ \\t]+)?${NAME_TOKEN}){0,3}${SUFFIX}`;
+const SUFFIX = `(?:,?[ \\t]+(?:Jr|Sr|II|III|IV|Esq|Ph\\.?D|M\\.?D)\\.?(?!${LETTER}))?`;
+// One or two spaces between name words: a wider gap (or a tab) is a column break, as in
+// a signature block "Thomas Becker        Katharina Wagner".
+const PHRASE = `(?<!${LETTER})${NAME_TOKEN}(?:[ ]{1,2}(?:(?:${PARTICLE_ALT})[ ]{1,2}){0,2}${NAME_TOKEN}){0,3}${SUFFIX}`;
 
-const norm = t => t.toLowerCase().replace(/\.$/, '').replace(/’/g, "'");
-const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const isInitial = t => /^[A-Z]\.?$/.test(t);
-// Morphology that marks business names ("Lending", "Analytics", "Solutions").
+const norm = t => fold(t.replace(/\.$/, '').replace(/’/g, "'"));
+const isInitial = t => /^\p{Lu}\.?$/u.test(t);
+// Morphology that marks business names ("Lending", "Analytics", "Solutions", "Gestión").
 // A word with one of these endings is only trusted as a surname if the lexicon
 // independently knows it (Manning, Davies).
-const CORPORATE_ENDING = /[a-z]{4,}(?:ing|ics|ions|ment|ware|works|tech|soft|labs|ies|ogy|ency)$/i;
-const isAllCaps = t => /^[A-Z][A-Z'’\-.]*$/.test(t) && /[A-Z]{2}/.test(t);
+const CORPORATE_ENDING = /\p{L}{3,}(?:ing|ics|ions|ment|ware|works|tech|soft|labs|ies|ogy|ency|ci[oó]n|ung|keit|heit|schaft|a[cç][aã]o)$/iu;
+const isAllCaps = t => /^\p{Lu}[\p{Lu}'’\-.]*$/u.test(t) && /\p{Lu}{2}/u.test(t);
 const hasLexicalSupport = tokens => tokens.some(t => isFirstName(t) || isLastName(t));
 
 // "John Hancock Insurance", "Martin Luther King Jr. Day": when a would-be name is
@@ -40,8 +56,8 @@ const TITLE_CONTINUATIONS = new Set([
   'avenue', 'road',
 ]);
 const followedByTitleWord = (text, end) => {
-  const m = /^\.?[ \t]+([A-Za-z]+)/.exec(text.slice(end, end + 40));
-  return !!m && TITLE_CONTINUATIONS.has(m[1].toLowerCase());
+  const m = /^\.?[ \t]+(\p{L}+)/u.exec(text.slice(end, end + 40));
+  return !!m && TITLE_CONTINUATIONS.has(norm(m[1]));
 };
 
 const NAME_SUFFIXES = new Set(['jr', 'sr', 'ii', 'iii', 'iv', 'esq', 'phd', 'md', 'ph.d', 'm.d']);
@@ -97,6 +113,23 @@ function score(c) {
   return s;
 }
 
+// "Sr.", "Dña.", "Herr": exact-case so that ordinary words ("d. Pago", "me") never
+// count as titles. A literal without its own period may carry an optional one.
+const strictHonorific = (() => {
+  const forms = new Set();
+  for (const h of STRICT_HONORIFICS) {
+    forms.add(h);
+    forms.add(h.toUpperCase());
+  }
+  return [...forms].map(h => (h.endsWith('.') ? escapeRe(h) : `${escapeRe(h)}\\.?`)).join('|');
+})();
+const anyHonorific = `(?:${alt(HONORIFICS)})\\.?|${strictHonorific}`;
+const HONORIFIC_RUN = `(?:(?:${anyHonorific})[ \\t]+){0,2}`;
+const ARTICLE = `(?:(?:${alt(['the', 'el', 'la', 'los', 'las', 'le', 'les', 'der', 'die', 'das', 'o', 'a'])})[ \\t]+)?`;
+const BETWEEN_RE = rx(`(?<!${LETTER})(?:${alt(BETWEEN_WORDS)})(?!${LETTER})`);
+const FIRST_AFTER_BETWEEN = word => rx(`${word}[ \\t]+${ARTICLE}${HONORIFIC_RUN}(${PHRASE})`);
+const SECOND_AFTER_AND = rx(`[ \\t](?:${alt(AND_WORDS)})[ \\t]+${ARTICLE}${HONORIFIC_RUN}(${PHRASE})`);
+
 function collectCandidates(text) {
   const cands = new Map();
   const run = (regex, handler) => {
@@ -109,38 +142,42 @@ function collectCandidates(text) {
   };
 
   // "Mr. John Smith", "Dr Zhao Wei"
-  run(new RegExp(`\\b(?:${alt(HONORIFICS)})\\.?[ \\t]+(${PHRASE})`),
+  run(rx(`(?<!${LETTER})(?:${alt(HONORIFICS)})\\.?[ \\t]+(${PHRASE})`),
     m => addCandidate(cands, m[1], 3, { honorific: true }));
-  run(new RegExp(`\\b${ci('dear')}[ \\t]+(?:(?:Mr|Mrs|Ms|Dr|Miss)\\.?[ \\t]+)?(${PHRASE})`),
+  // "Sra. María García", "Herr Müller", "M. Dupont", "Dña. Ana"
+  run(rx(`(?<!${LETTER})(?:${strictHonorific})[ \\t]+(${PHRASE})`),
+    m => addCandidate(cands, m[1], 3, { honorific: true }));
+  // "Dear Mr. Okafor", "Estimado Sr. Pérez", "Sehr geehrter Herr Müller", "Cher Monsieur Dupont"
+  run(rx(`(?<!${LETTER})(?:${alt(['dear'])}|${SALUTATIONS.map(s => `${strictAlt(s)}`).join('|')})[ \\t]+${HONORIFIC_RUN}(${PHRASE})`),
     m => addCandidate(cands, m[1], 3));
 
-  // "Name: Jane Doe", "Signed - Jane Doe", "By: Jane Doe"
-  run(new RegExp(`\\b(?:${alt(LABEL_CUES)})[ \\t]*[:\\-–][ \\t]*(${PHRASE})`),
+  // "Name: Jane Doe", "Signed - Jane Doe", "By: Jane Doe", "Nombre: Juan Pérez"
+  run(rx(`(?<!${LETTER})(?:${alt(LABEL_CUES)})[ \\t]*[:\\-–][ \\t]*${HONORIFIC_RUN}(${PHRASE})`),
     m => addCandidate(cands, m[1], 3));
 
-  // "Tenant Jane Doe", "Landlord: Maria Gonzalez"
-  run(new RegExp(`\\b(?:${alt(ROLE_CUES)})[ \\t]*[,:\\-–]?[ \\t]*(?:\\([^)\\n]{0,30}\\)[ \\t]*)?(${PHRASE})`),
+  // "Tenant Jane Doe", "Landlord: Maria Gonzalez", "El arrendatario Juan Pérez", "Mieter Hans Meier"
+  run(rx(`(?<!${LETTER})(?:${alt(ROLE_CUES)})(?!${LETTER})[ \\t]*[,:\\-–]?[ \\t]*(?:\\([^)\\n]{0,30}\\)[ \\t]*)?${HONORIFIC_RUN}(${PHRASE})`),
     m => addCandidate(cands, m[1], 2));
 
-  // 'Jane Doe (the "Tenant")', 'Jane Doe ("Lessee")'
-  run(new RegExp(`(${PHRASE})[ \\t]*,?[ \\t]*\\((?:[ \\t]*(?:the|hereinafter|herein|referred[ \\t]+to[ \\t]+as|collectively|individually|each)[ \\t]+)*[ \\t]*[“"'‘][ \\t]*([A-Za-z][A-Za-z ]{1,30}?)[ \\t]*[”"'’]`),
-    m => addCandidate(cands, m[1], ORGISH_DEFINED_TERMS.has(m[2].trim().toLowerCase()) ? 1 : 2));
+  // 'Jane Doe (the "Tenant")', 'Juan Pérez ("el Arrendatario")', 'Marie Dupont (« le Locataire »)'
+  run(rx(`(${PHRASE})[ \\t]*,?[ \\t]*\\((?:[ \\t]*(?:the|hereinafter|herein|referred[ \\t]+to[ \\t]+as|collectively|individually|each|en adelante|en lo sucesivo|denominad[oa]|ci-après|ci-apres|dénommé[e]?|denomme[e]?|nachfolgend|im Folgenden|doravante|designad[oa]|el|la|le|der|die|o|a)[ \\t]+)*[ \\t]*[“"'‘«][ \\t]*([\\p{L}][\\p{L} ]{1,30}?)[ \\t]*[”"'’»]`),
+    m => addCandidate(cands, m[1], ORGISH_DEFINED_TERMS.has(norm(m[2].trim())) ? 1 : 2));
 
-  // "between Jane Doe and John Smith"
-  run(/\bbetween\b/i, m => {
+  // "between Jane Doe and John Smith", "entre Juan Pérez y María López", "zwischen Hans Meier und ..."
+  run(BETWEEN_RE, m => {
     const window = text.slice(m.index, m.index + 240).split(/\n\s*\n/)[0];
-    const first = new RegExp(`between[ \\t]+(?:the[ \\t]+)?(${PHRASE})`, 'i').exec(window);
+    const first = FIRST_AFTER_BETWEEN(ci(m[0])).exec(window);
     if (first) addCandidate(cands, first[1], 1);
-    const second = new RegExp(`[ \\t]and[ \\t]+(?:the[ \\t]+)?(${PHRASE})`).exec(window);
+    const second = SECOND_AFTER_AND.exec(window);
     if (second) addCandidate(cands, second[1], 1);
   });
 
   // "/s/ Jane Doe"
-  run(new RegExp(`\\/s\\/[ \\t]*(${PHRASE})`), m => addCandidate(cands, m[1], 3));
+  run(rx(`\\/s\\/[ \\t]*(${PHRASE})`), m => addCandidate(cands, m[1], 3));
 
   // A line that is only a name, sitting in a signature block
   const lines = text.split('\n');
-  const lineRe = new RegExp(`^[ \\t]*(${PHRASE})[ \\t]*(?:,[ \\t]*[A-Za-z .&]{2,40})?[ \\t]*$`);
+  const lineRe = rx(`^[ \\t]*(${PHRASE})[ \\t]*(?:,[ \\t]*[\\p{L} .&]{2,40})?[ \\t]*$`);
   for (let i = 0; i < lines.length; i++) {
     if (lines[i].length > 80) continue;
     const m = lineRe.exec(lines[i]);
@@ -164,7 +201,9 @@ function collectCandidates(text) {
   try {
     const sample = text.length > PEOPLE_SCAN_LIMIT ? text.slice(0, PEOPLE_SCAN_LIMIT) : text;
     for (const person of nlp(sample).people().out('array')) {
-      if (/^[A-Z]/.test(person.trim()) && person.trim().split(/\s+/).every(t => /^[A-Z]/.test(t))) {
+      const trimmed = person.trim();
+      if (/[ ]{3,}|\t|\n/.test(trimmed)) continue; // spans a column break (signature block)
+      if (/^\p{Lu}/u.test(trimmed) && trimmed.split(/\s+/).every(t => /^\p{Lu}/u.test(t))) {
         addCandidate(cands, person, 0, { people: true });
       }
     }
@@ -172,15 +211,26 @@ function collectCandidates(text) {
     // fall through — the other signals still run
   }
 
-  // Pure lexicon pairs ("Jane Roberts") with no surrounding cue
-  run(new RegExp(PHRASE), m => addCandidate(cands, m[0], 0));
+  // Pure lexicon pairs ("Jane Roberts", "María García") with no surrounding cue
+  // A leading capitalized word ("Reunidos María García", German nouns) must not hide the pair,
+  // so the trailing windows of each run are tried as well.
+  run(rx(PHRASE), m => {
+    addCandidate(cands, m[0], 0);
+    const toks = m[0].split(/[ \t]+/);
+    for (let i = 1; toks.length - i >= 2; i++) addCandidate(cands, toks.slice(i).join(' '), 0);
+  });
 
   return cands;
 }
 
+// One literal, case-insensitive, for salutation words ("Sehr geehrter", "Estimado").
+function strictAlt(word) {
+  return ci(word);
+}
+
 function tokenSpans(text, token) {
   const variants = [...new Set([token, token.toUpperCase(), titleCase(token)])].map(escapeRe).join('|');
-  return new RegExp(`(?<![A-Za-z'’\\-])(?:${variants})(?![A-Za-z])`, 'g');
+  return rx(`(?<![${LETTER}'’\\-])(?:${variants})(?!${LETTER})`, 'g');
 }
 
 function detectNames(text) {
@@ -202,11 +252,11 @@ function detectNames(text) {
   for (const { tokens, ev } of accepted) {
     const phraseSpans = [];
     if (tokens.length >= 2) {
-      const body = tokens.map(t => escapeRe(t)).join('[ \\t]+(?:[A-Za-z]\\.?[ \\t]+)?');
-      phraseSpans.push(...matches(new RegExp(`(?<![A-Za-z])${body}(?![A-Za-z])`, 'gi'), 55, true));
+      const body = tokens.map(t => escapeRe(t)).join(`[ ]{1,2}(?:${LETTER}\\.?[ ]{1,2})?`);
+      phraseSpans.push(...matches(rx(`(?<!${LETTER})${body}(?!${LETTER})`, 'gi'), 55, true));
       if (tokens.length === 2) {
         phraseSpans.push(...matches(
-          new RegExp(`(?<![A-Za-z])${escapeRe(tokens[1])}[ \\t]*,[ \\t]*${escapeRe(tokens[0])}(?![A-Za-z])`, 'gi'), 55, true));
+          rx(`(?<!${LETTER})${escapeRe(tokens[1])}[ \\t]*,[ \\t]*${escapeRe(tokens[0])}(?!${LETTER})`, 'gi'), 55, true));
       }
       // A name found only by lexicon/people() that never survives as a standalone
       // name (always part of "X Insurance", "X Day"...) is not a person.

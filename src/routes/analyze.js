@@ -1,5 +1,6 @@
 const express = require('express');
 const { z } = require('zod');
+const { LANG_NAMES } = require('../pii/langs');
 const router = express.Router();
 
 const MAX_INPUT_CHARS = 8000;
@@ -119,6 +120,14 @@ ${BASE_RULES}`,
 ${BASE_RULES}`,
 };
 
+// Optional: the language the user reads. Without it (older app builds) the prompt is
+// unchanged. The contract itself may be in any language; only the explanation follows this.
+function languageInstruction(code) {
+  const name = LANG_NAMES[code];
+  if (!name) return '';
+  return `\n\nLANGUAGE: Write every human-readable string value in your JSON (category, summary, title, description, recommendation, and each entry of missing_protections) in ${name}. Keep the JSON keys, and the fixed values for "overall_risk", "severity" and "type", exactly as specified above, in English. The contract may be written in a different language than ${name}: analyze it in its original language and explain your findings in ${name}.`;
+}
+
 async function callGroq(systemPrompt, userContent) {
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
@@ -150,14 +159,15 @@ async function callGroq(systemPrompt, userContent) {
 
 /**
  * POST /api/analyze
- * Accepts { scrubbedText, contractType, chunkContext } and calls Groq for a risk analysis.
+ * Accepts { scrubbedText, contractType, chunkContext, outputLanguage } and calls Groq for a risk analysis.
  * contractType: 'auto' | 'employment' | 'nda' | 'lease' | 'service' | 'loan' | 'tos'
+ * outputLanguage (optional): 'en' | 'es' | 'fr' | 'de' | 'pt' — the language of the written explanation.
  * chunkContext (optional): { index, total } — set by the client when a long contract has
  * been split into multiple sections. Tells the model not to flag clauses as "missing" just
  * because they're in a different section, and not to assume this section is the whole contract.
  */
 router.post('/', async (req, res) => {
-  const { scrubbedText, contractType = 'auto', chunkContext } = req.body;
+  const { scrubbedText, contractType = 'auto', chunkContext, outputLanguage } = req.body;
 
   if (!scrubbedText?.trim()) {
     return res.status(400).json({ error: 'No scrubbed text provided' });
@@ -167,7 +177,7 @@ router.post('/', async (req, res) => {
     return res.status(500).json({ error: 'GROQ_API_KEY is not set in .env' });
   }
 
-  let systemPrompt = PROMPTS[contractType] || PROMPTS.auto;
+  let systemPrompt = (PROMPTS[contractType] || PROMPTS.auto) + languageInstruction(outputLanguage);
   if (chunkContext?.total > 1) {
     systemPrompt += `\n\nNote: this is section ${chunkContext.index} of ${chunkContext.total} of a longer contract that has been split due to length. Analyze only the provided section. Do not assume it is the complete contract, and do not list something under "missing_protections" solely because it isn't in this section — it may appear elsewhere.`;
   }
@@ -196,6 +206,7 @@ router.post('/', async (req, res) => {
 // Exposed for reuse by the eval harness (eval/run.js) — the router itself
 // remains a valid Express middleware function, these are just extra properties.
 router.callGroq = callGroq;
+router.languageInstruction = languageInstruction;
 router.PROMPTS = PROMPTS;
 router.MAX_INPUT_CHARS = MAX_INPUT_CHARS;
 

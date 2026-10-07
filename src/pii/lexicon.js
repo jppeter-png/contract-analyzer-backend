@@ -1,8 +1,10 @@
 const nlp = require('compromise');
+const { fold, FIRST_NAMES, LAST_NAMES } = require('./langs');
 
-// compromise ships a first/last-name lexicon. We only use it as per-token
+// compromise ships an (English) first/last-name lexicon. We only use it as per-token
 // evidence — whole-sentence people() detection is too context-sensitive to
-// trust on its own.
+// trust on its own. Spanish, French, German and Portuguese names come from the
+// lists in langs.js, compared accent-insensitively.
 const cache = new Map();
 
 function titleCase(word) {
@@ -24,8 +26,9 @@ function tagsFor(word) {
   return tags;
 }
 
-const isFirstName = w => tagsFor(w).has('FirstName');
-const isLastName = w => tagsFor(w).has('LastName');
+const bare = w => fold(w.replace(/\.$/, ''));
+const isFirstName = w => FIRST_NAMES.has(bare(w)) || tagsFor(w).has('FirstName');
+const isLastName = w => LAST_NAMES.has(bare(w)) || tagsFor(w).has('LastName');
 
 const FUNCTION_WORD_TAGS = [
   'Verb', 'Modal', 'Auxiliary', 'Copula', 'Adjective', 'Adverb', 'Preposition',

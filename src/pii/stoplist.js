@@ -1,9 +1,13 @@
-const set = words => new Set(words.split(/\s+/).filter(Boolean));
+const langs = require('./langs');
+
+// Accent-folded, so "Señor" and "senor" hit the same entry.
+const set = words => new Set(words.split(/\s+/).filter(Boolean).map(langs.fold));
+const merge = (base, extra) => new Set([...base, ...extra]);
 
 // Capitalized words that routinely appear in contracts but are not part of a
 // person's name. They are trimmed from the edges of a candidate name, so
 // "Employee Handbook" leaves nothing and "Tenant Jane Doe" leaves "Jane Doe".
-const LEGAL_STOP = set(`
+const LEGAL_STOP_EN = set(`
   agreement contract lease party parties company corporation employee employer tenant landlord lessee lessor
   buyer seller client customer contractor subcontractor consultant licensor licensee owner borrower lender
   guarantor debtor creditor vendor supplier provider recipient discloser disclosing receiving
@@ -40,7 +44,7 @@ const LEGAL_STOP = set(`
 
 // A phrase containing any of these is treated as an organization, not a person
 // (unless an honorific makes it explicit).
-const ORG_WORDS = set(`
+const ORG_WORDS_EN = set(`
   inc incorporated llc llp lp corp corporation company co ltd limited plc gmbh ag sa nv bv pty
   trust bank university college school association foundation partners partnership group holdings
   services solutions systems technologies properties management realty enterprises associates
@@ -52,7 +56,7 @@ const ORG_WORDS = set(`
   engineering research works brands retail wholesale advisors advisory mutual federal
 `);
 
-const PARTICLES = set('de van von der den da di del della la le bin ibn al el dos du');
+const PARTICLES_EN = set('de van von der den da di del della la le bin ibn al el dos du');
 
 // Org-ish defined terms: "Acme Widgets (the "Company")" is far more likely an
 // organization than a person, so it earns less name evidence.
@@ -60,7 +64,7 @@ const ORGISH_DEFINED_TERMS = set(
   'company corporation firm vendor supplier provider agency organization partnership business employer'
 );
 
-const ROLE_CUES = [
+const ROLE_CUES_EN = [
   'tenant', 'landlord', 'lessee', 'lessor', 'subtenant', 'employee', 'employer', 'borrower', 'lender',
   'buyer', 'seller', 'client', 'customer', 'contractor', 'consultant', 'licensor', 'licensee', 'owner',
   'guarantor', 'cosigner', 'co-signer', 'co-borrower', 'debtor', 'creditor', 'applicant', 'patient',
@@ -69,26 +73,40 @@ const ROLE_CUES = [
   'assignor', 'assignee', 'grantor', 'grantee', 'principal', 'recipient', 'contact',
 ];
 
-const LABEL_CUES = [
+const LABEL_CUES_EN = [
   'name', 'print name', 'printed name', 'full name', 'legal name', 'signed', 'signature', 'by',
   'attn', 'attention', 'to', 'from', 'cc', 'witness', 'notary', 'resident', 'owner', 'tenant',
   'landlord', 'employee', 'employer', 'borrower', 'lender', 'buyer', 'seller',
 ];
 
-const HONORIFICS = [
+const HONORIFICS_EN = [
   'mr', 'mrs', 'ms', 'miss', 'mx', 'dr', 'prof', 'rev', 'hon', 'sir', 'madam', 'mme', 'mlle', 'herr', 'frau',
 ];
 
-const GENERIC_EMAIL_LOCALS = set(`
+const GENERIC_EMAIL_LOCALS_EN = set(`
   info admin support sales contact hello office billing legal team noreply no-reply hr careers jobs help
   service press media marketing accounts accounting finance payroll privacy security abuse postmaster
   webmaster mail email enquiries inquiries general reception orders
 `);
 
-const SIGNATURE_CONTEXT =
+const SIGNATURE_CONTEXT_EN =
   /_{3,}|\bsignature\b|\bsigned\b|\bdate\s*:|^\s*by\s*:|\bprint(?:ed)?\b|\btitle\s*:|\bwitness\b|\b(?:tenant|landlord|employee|employer|lessee|lessor|borrower|lender|buyer|seller|client|contractor|owner|guarantor)\b/i;
+
+const LEGAL_STOP = merge(LEGAL_STOP_EN, langs.LEGAL_STOP);
+const ORG_WORDS = merge(ORG_WORDS_EN, langs.ORG_WORDS);
+const PARTICLES = merge(PARTICLES_EN, langs.PARTICLES);
+const GENERIC_EMAIL_LOCALS = merge(GENERIC_EMAIL_LOCALS_EN, langs.GENERIC_EMAIL_LOCALS);
+const unique = list => [...new Set(list)];
+const ROLE_CUES = unique([...ROLE_CUES_EN, ...langs.ROLE_CUES]);
+const LABEL_CUES = unique([...LABEL_CUES_EN, ...langs.LABEL_CUES]);
+const HONORIFICS = unique([...HONORIFICS_EN, ...langs.HONORIFICS]);
+const SIGNATURE_CONTEXT = new RegExp(`${SIGNATURE_CONTEXT_EN.source}|\\b(?:${langs.SIGNATURE_CONTEXT_SOURCE}|${langs.ROLE_CUES.map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`, 'iu');
 
 module.exports = {
   LEGAL_STOP, ORG_WORDS, PARTICLES, ORGISH_DEFINED_TERMS, ROLE_CUES, LABEL_CUES,
   HONORIFICS, GENERIC_EMAIL_LOCALS, SIGNATURE_CONTEXT,
+  STRICT_HONORIFICS: langs.STRICT_HONORIFICS,
+  SALUTATIONS: langs.SALUTATIONS,
+  BETWEEN_WORDS: ['between', ...langs.BETWEEN_WORDS],
+  AND_WORDS: ['and', ...langs.AND_WORDS],
 };
