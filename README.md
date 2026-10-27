@@ -134,6 +134,10 @@ Each issue's `type` is `unfair_clause` (an actual clause is present and disadvan
 
 ---
 
+### Legal pages
+
+`/privacy`, `/terms` and `/support` are served in English from `public/*.html`. Add `?lang=es|fr|de|pt|zh` for a translation (unknown codes fall back to English). Translations live in `src/pages/content/<lang>.js` and are rendered into the English page's styles by `src/pages/render.js`; `test/pages.test.js` checks that every translation has the same structure and links as the English page. When you edit an English page, update the content files too.
+
 ## Known limitations
 
 - **No provider abstraction**: only Groq/GPT-OSS is wired up. See the note in Setup above if you want to swap models.

@@ -7,6 +7,7 @@ const rateLimit = require('express-rate-limit');
 const scrubRouter = require('./src/routes/scrub');
 const analyzeRouter = require('./src/routes/analyze');
 const ocrRouter = require('./src/routes/ocr');
+const { getPage, PAGES } = require('./src/pages/render');
 
 const app = express();
 
@@ -23,9 +24,10 @@ app.use('/api/ocr', apiLimiter, ocrRouter);
 
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
-app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')));
-app.get('/support', (req, res) => res.sendFile(path.join(__dirname, 'public', 'support.html')));
-app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')));
+// Legal pages are English by default; ?lang=es|fr|de|pt|zh serves a translation.
+for (const page of PAGES) {
+  app.get(`/${page}`, (req, res) => res.type('html').send(getPage(page, req.query.lang)));
+}
 
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
