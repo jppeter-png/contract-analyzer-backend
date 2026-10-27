@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const { extractText } = require('../textExtractor');
 const { scrubPII } = require('../piiScrubber');
+const { countWords } = require('../textStats');
 
 const router = express.Router();
 
@@ -41,7 +42,7 @@ router.post('/', upload.single('file'), async (req, res) => {
     }
 
     const { scrubbed, findings } = scrubPII(rawText);
-    const wordCount = rawText.split(/\s+/).filter(Boolean).length;
+    const wordCount = countWords(rawText);
     const totalRedacted = findings.reduce((sum, f) => sum + f.count, 0);
 
     res.json({

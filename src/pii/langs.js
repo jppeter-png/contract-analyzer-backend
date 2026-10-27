@@ -304,7 +304,7 @@ const PACKS = {
   },
 };
 
-const LANG_NAMES = { en: 'English', es: 'Spanish', fr: 'French', de: 'German', pt: 'Portuguese' };
+const LANG_NAMES = { en: 'English', es: 'Spanish', fr: 'French', de: 'German', pt: 'Portuguese', zh: 'Simplified Chinese' };
 
 const all = pick => Object.values(PACKS).flatMap(pick);
 const union = pick => new Set(all(p => words(pick(p))).map(fold));

@@ -1,6 +1,7 @@
 const nlp = require('compromise');
 const { isFirstName, isLastName, isCommonWord, titleCase } = require('./lexicon');
 const { fold } = require('./langs');
+const { detectChineseNames } = require('./chinese');
 const {
   LEGAL_STOP, ORG_WORDS, PARTICLES, ORGISH_DEFINED_TERMS, ROLE_CUES, LABEL_CUES,
   HONORIFICS, STRICT_HONORIFICS, SALUTATIONS, BETWEEN_WORDS, AND_WORDS, GENERIC_EMAIL_LOCALS,
@@ -271,6 +272,7 @@ function detectNames(text) {
       spans.push(...matches(tokenSpans(text, bare), 50, false));
     }
   }
+  spans.push(...detectChineseNames(text));
   return spans;
 }
 

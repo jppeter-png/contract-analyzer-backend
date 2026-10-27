@@ -1,11 +1,12 @@
 const express = require('express');
 const multer = require('multer');
 const Tesseract = require('tesseract.js');
+const { countWords, removeCjkSpacing } = require('../textStats');
 
 // Tesseract language packs for the supported document languages. English is always
 // included (contracts quote English terms), and the total is capped so a request
 // cannot make the worker load every pack.
-const TESSERACT_CODES = { en: 'eng', es: 'spa', fr: 'fra', de: 'deu', pt: 'por' };
+const TESSERACT_CODES = { en: 'eng', es: 'spa', fr: 'fra', de: 'deu', pt: 'por', zh: 'chi_sim' };
 const MAX_OCR_LANGUAGES = 3;
 
 function resolveOcrLanguages(requested) {
@@ -32,10 +33,20 @@ const upload = multer({
   },
 });
 
+// Tesseract scores each page 0-100 (how sure it is of the characters it read). The app uses
+// the average, and the weakest page, to warn when photos were hard to read.
+function summarizeConfidence(values) {
+  const scores = values.filter(v => Number.isFinite(v));
+  if (!scores.length) return { confidence: null, lowestPageConfidence: null };
+  const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+  return { confidence: Math.round(avg), lowestPageConfidence: Math.round(Math.min(...scores)) };
+}
+
 /**
  * POST /api/ocr
  * Accepts multiple images (multipart), runs Tesseract OCR on each,
  * and returns the combined extracted text in page order.
+ * Also returns `confidence` (average, 0-100) and `lowestPageConfidence`; null if unknown.
  * Optional form field `languages` (e.g. "es" or "fr,de") adds those language packs to English.
  */
 router.post('/', upload.array('images', 20), async (req, res) => {
@@ -45,6 +56,7 @@ router.post('/', upload.array('images', 20), async (req, res) => {
 
   try {
     const pageTexts = [];
+    const pageConfidences = [];
     const ocrLanguages = resolveOcrLanguages(req.body && req.body.languages);
 
     for (let i = 0; i < req.files.length; i++) {
@@ -55,16 +67,18 @@ router.post('/', upload.array('images', 20), async (req, res) => {
         logger: () => {}, // suppress verbose logs
       });
 
-      pageTexts.push(data.text);
+      pageTexts.push(removeCjkSpacing(data.text));
+      pageConfidences.push(data.confidence);
     }
 
     const combinedText = pageTexts.join('\n\n--- Page Break ---\n\n');
-    const wordCount = combinedText.split(/\s+/).filter(Boolean).length;
+    const wordCount = countWords(combinedText);
 
     res.json({
       text: combinedText,
       pageCount: req.files.length,
       wordCount,
+      ...summarizeConfidence(pageConfidences),
     });
   } catch (err) {
     console.error('OCR error:', err.message);
@@ -73,5 +87,6 @@ router.post('/', upload.array('images', 20), async (req, res) => {
 });
 
 router.resolveOcrLanguages = resolveOcrLanguages;
+router.summarizeConfidence = summarizeConfidence;
 
 module.exports = router;

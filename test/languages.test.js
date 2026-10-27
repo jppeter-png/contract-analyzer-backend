@@ -70,3 +70,17 @@ describe('POST /api/analyze — output language', () => {
     expect(prompt).toContain('section 2 of 3');
   });
 });
+
+describe('OCR confidence summary', () => {
+  const { summarizeConfidence } = ocr;
+  test('reports the average and the weakest page', () => {
+    expect(summarizeConfidence([90, 80, 40])).toEqual({ confidence: 70, lowestPageConfidence: 40 });
+  });
+  test('rounds, and a single page is both', () => {
+    expect(summarizeConfidence([87.6])).toEqual({ confidence: 88, lowestPageConfidence: 88 });
+  });
+  test('ignores missing scores and is null when there are none', () => {
+    expect(summarizeConfidence([undefined, 60, NaN])).toEqual({ confidence: 60, lowestPageConfidence: 60 });
+    expect(summarizeConfidence([])).toEqual({ confidence: null, lowestPageConfidence: null });
+  });
+});

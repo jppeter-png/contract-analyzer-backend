@@ -77,4 +77,15 @@ function validNir(raw) {
   return 97 - (Number(d.slice(0, 13)) % 97) === Number(d.slice(13));
 }
 
-module.exports = { digitsOf, luhn, validIpv4, validIban, validDni, validNie, validCpf, validNifPt, validNir };
+// Chinese resident ID (18 characters): the last one is an ISO 7064 mod 11-2 check, and the
+// embedded birth date must be a real date.
+function validChineseId(raw) {
+  const v = raw.replace(/\s+/g, '').toUpperCase();
+  if (!/^[1-9]\d{5}(?:18|19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])\d{3}[\dX]$/.test(v)) return false;
+  const weights = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
+  let sum = 0;
+  for (let i = 0; i < 17; i++) sum += Number(v[i]) * weights[i];
+  return '10X98765432'[sum % 11] === v[17];
+}
+
+module.exports = { digitsOf, luhn, validIpv4, validIban, validDni, validNie, validCpf, validNifPt, validNir, validChineseId };

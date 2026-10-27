@@ -1,4 +1,4 @@
-const { digitsOf, luhn, validIpv4, validIban, validDni, validNie, validCpf, validNifPt, validNir } = require('./validators');
+const { digitsOf, luhn, validIpv4, validIban, validDni, validNie, validCpf, validNifPt, validNir, validChineseId } = require('./validators');
 
 const MONTH = '(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)';
 const DATE = `(?:\\d{1,2}[\\/\\-.]\\d{1,2}[\\/\\-.]\\d{2,4}|\\d{4}-\\d{2}-\\d{2}|${MONTH}\\.?[ \\t]+\\d{1,2}(?:st|nd|rd|th)?,?[ \\t]+\\d{4}|\\d{1,2}(?:st|nd|rd|th)?[ \\t]+${MONTH}\\.?,?[ \\t]+\\d{4})`;
@@ -11,7 +11,7 @@ const CITY_STATE_ZIP = `[A-Z][A-Za-z.'’\\-]+(?:[ \\t]+[A-Z][A-Za-z.'’\\-]+){
 const UNIT = '(?:Apt|Apartment|Suite|Ste|Unit|Floor|Fl|Room|Rm|Bldg|Building|APT|SUITE|STE|UNIT)';
 
 const SECTION_CONTEXT = /(?:section|sec\.?|clause|article|§|paragraph|para\.?|schedule|exhibit|item|step|version|ver\.?|v|art[ií]culo|art\.|cl[aá]usula|apartado|punto|anexo|artikel|abs\.|absatz|ziffer|artigo|cl[aá]usula|n[ºo°]\.?)\s*$/i;
-const CARD_CONTEXT = /(?:card|visa|mastercard|master card|amex|american express|discover|debit|credit|tarjeta|carte|karte|kreditkarte|cart[ãa]o|d[ée]bito|cr[ée]dito)[^\n]{0,30}$/i;
+const CARD_CONTEXT = /(?:card|visa|mastercard|master card|amex|american express|discover|debit|credit|tarjeta|carte|karte|kreditkarte|cart[ãa]o|d[ée]bito|cr[ée]dito|银行卡|信用卡|储蓄卡|借记卡|卡号)[^\n]{0,30}$/i;
 
 
 // ---- shared pieces for the Spanish / French / German / Portuguese rules -------------------
@@ -65,6 +65,14 @@ const FRENCH_STREET = alts([
   'passage', 'square', 'cité', 'cite', 'rond-point', 'voie', 'villa', 'sentier', 'esplanade',
 ]);
 const GERMAN_STREET_END = 'straße|strasse|str\\.|weg|allee|platz|gasse|ring|damm|ufer|chaussee|steig|pfad|markt|hof|park|STRASSE|STRAßE|STR\\.';
+
+// A Chinese address regex starts wherever the earliest city-like word starts, which can drag in
+// the words before it ("乙方以其位于广州市…"). Drop everything up to a "located at"-type marker.
+const ADDRESS_LEAD = /^[一-鿿]{0,10}?(?:位于|坐落于|座落于|地处|现住|住在|居住于|住于|设于|搬至|迁至|送至|寄至|[在于至到从往])(?=[一-鿿0-9])/;
+function trimChineseAddressLead(value) {
+  const m = ADDRESS_LEAD.exec(value);
+  return m && value.length - m[0].length >= 6 ? m[0].length : 0;
+}
 
 // Each rule: regex (matched against the ORIGINAL text), label shown in the app,
 // placeholder tag, overlap priority (higher wins), optional capture group that
@@ -221,6 +229,39 @@ const RULES = [
   // Postal codes named by a label ("CP 28013", "PLZ 10115", "CEP 01310-100")
   { label: 'Street addresses', tag: '[ADDRESS]', priority: 78, group: 1,
     regex: /(?<!\p{L})(?:C\.?P\.?|PLZ|CEP|Postleitzahl|c[óo]digo[ \t]+postal|code[ \t]+postal)(?!\p{L})[ \t]*[:.]?[ \t]*(\d{4,5}(?:-\d{3,4})?)/giu },
+
+  // ---- Chinese (Simplified) ---------------------------------------------------------------
+
+  // Resident ID numbers carry a checksum, so a valid one is recognized without any label.
+  { label: 'ID numbers', tag: '[ID]', priority: 99, // above cards (98): 18 digits can pass the card checksum by chance
+    regex: /(?<![0-9A-Za-z])[1-9]\d{5}(?:18|19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])\d{3}[\dXx](?![0-9A-Za-z])/g,
+    validate: validChineseId },
+  // The same, labeled (also catches typos and the old 15-digit form).
+  { label: 'ID numbers', tag: '[ID]', priority: 99, group: 1,
+    regex: /(?:身份证(?:号码?|号)?|居民身份证|证件号码?|护照(?:号码?|号)?|驾驶证(?:号码?|号)?|港澳通行证(?:号码?)?|社保(?:卡)?号|社会保险号|医保(?:卡)?号|工号|学号|员工编号)[ \t]*[:：]?[ \t]*([0-9A-Za-z][0-9A-Za-z\-]{5,20})(?![0-9A-Za-z])/g,
+    validate: value => digitsOf(value).length >= 5 },
+  // Mobile numbers (11 digits, 13x-19x), optionally with +86, and landlines (area code + number).
+  { label: 'Phone numbers', tag: '[PHONE]', priority: 95,
+    regex: /(?<![\d.])(?:\+?86[ \-]?)?1[3-9]\d[ \-]?\d{4}[ \-]?\d{4}(?![\d元万%])/g },
+  { label: 'Phone numbers', tag: '[PHONE]', priority: 95,
+    regex: /(?<![\d.])0\d{2,3}[-－ ]\d{7,8}(?:[-－]\d{1,5})?(?![\d元万%])/g },
+  { label: 'Date of birth patterns', tag: '[DOB]', priority: 92,
+    regex: /(?:出生日期|出生年月日?|出生于|出生|生日)[ \t]*[:：]?[ \t]*\d{4}[ \t]*[年\-/.][ \t]*\d{1,2}[ \t]*[月\-/.][ \t]*\d{1,2}[ \t]*[日号]?/g },
+  { label: 'Date of birth patterns', tag: '[DOB]', priority: 92,
+    regex: /\d{4}[ \t]*[年\-/.][ \t]*\d{1,2}[ \t]*[月\-/.][ \t]*\d{1,2}[ \t]*[日号]?[ \t]*(?:出生|生)(?![一-鿿])/g },
+  { label: 'Bank account numbers', tag: '[ACCOUNT]', priority: 90, group: 1,
+    regex: /(?:银行账号|银行账户|开户账号|银行卡号|储蓄卡号|信用卡号|账号|账户号|账户|卡号)[ \t]*[:：]?[ \t]*(\d[\d \-]{7,28}\d)/g,
+    validate: value => digitsOf(value).length >= 8 },
+  { label: 'EIN / Tax IDs', tag: '[EIN]', priority: 60, group: 1,
+    regex: /(?:统一社会信用代码|纳税人识别号|税号)[ \t]*[:：]?[ \t]*([0-9A-Z]{15,20})(?![0-9A-Z])/g },
+  // Addresses: a labeled address up to the next punctuation, or a street with a house number
+  // ("朝阳区建国路88号3号楼2单元501室"). Names of cities alone ("上海市人民法院") are left alone.
+  { label: 'Street addresses', tag: '[ADDRESS]', priority: 80, group: 1,
+    regex: /(?:住址|住所地?|地址|通讯地址|联系地址|居住地|送达地址|注册地址)[ \t]*[:：][ \t]*([一-鿿A-Za-z0-9\-－()（）#号]{6,60})/g },
+  { label: 'Street addresses', tag: '[ADDRESS]', priority: 78, trimStart: trimChineseAddressLead,
+    regex: /(?:[一-鿿]{2,9}(?:省|自治区))?(?:[一-鿿]{2,9}(?:市|州|盟))?(?:[一-鿿]{1,9}(?:区|县|旗))?[一-鿿0-9]{1,12}(?:大道|路|街道|街|巷|弄|胡同|道|村|镇|乡)[一-鿿0-9]{0,8}?\d+(?:-\d+)?号(?:院|楼)?(?:[一-鿿A-Za-z0-9\-]{1,10}?(?:栋|幢|座|单元|室|楼|层|号楼|号院|门))*/g },
+  { label: 'Street addresses', tag: '[ADDRESS]', priority: 78, group: 1,
+    regex: /(?:邮编|邮政编码)[ \t]*[:：]?[ \t]*(\d{6})(?!\d)/g },
 ];
 
 // Order in which finding labels are reported to the app (names come last).
@@ -240,6 +281,7 @@ function findStructured(text) {
         if (m[rule.group] === undefined) continue;
         [start, end] = m.indices[rule.group];
       }
+      if (rule.trimStart) start += rule.trimStart(text.slice(start, end));
       const value = text.slice(start, end);
       if (rule.validate && !rule.validate(value, m, text, start, end)) continue;
       spans.push({ start, end, label: rule.label, tag: rule.tag, priority: rule.priority });
