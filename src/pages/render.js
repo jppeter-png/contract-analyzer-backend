@@ -18,6 +18,7 @@ const LANGBAR_CSS = `
   .langbar { margin-top: 1.5rem; font-size: 0.85rem; color: var(--ink-faint); }
   .langbar a { margin-right: 0.9rem; }
   .langbar a[aria-current="page"] { color: var(--ink); font-weight: 600; text-decoration: none; }
+  footer .credit { color: var(--ink-faint); font-size: 0.85rem; margin-top: 0.5rem; }
   .translation-note { color: var(--ink-faint); font-size: 0.85rem; margin-top: 0.5rem; }
 </style>`;
 
@@ -158,6 +159,7 @@ ${bar}
   <footer>
     <div>${c.appName}</div>
     <div><a href="${c.privacyHref}">${c.privacyLabel}</a> · <a href="${c.termsHref}">${c.termsLabel}</a></div>
+    <div class="credit">${c.credit}</div>
   </footer>
 
 </div>

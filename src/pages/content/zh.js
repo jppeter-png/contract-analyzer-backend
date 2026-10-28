@@ -206,6 +206,7 @@ const support = {
   faqHeading: '常见问题',
   privacyLabel: '隐私政策',
   termsLabel: '使用条款',
+  credit: '应用创意：Chrystal Ding',
   faq: [
     { id: 'account', q: '我需要创建账号吗？', a: '不需要。没有注册、登录或个人档案——打开应用即可立即开始分析文档。' },
     { id: 'file-types', q: '支持哪些文件类型？', a: '支持上传 PDF 和 DOCX 文件、粘贴文本，以及用相机拍摄的页面。' },
