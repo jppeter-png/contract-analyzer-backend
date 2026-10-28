@@ -201,6 +201,74 @@ describe('POST /api/analyze', () => {
     expect(global.fetch).toHaveBeenCalledTimes(2);
   });
 
+  describe('provider rate limits', () => {
+    const limited = (message, headers = {}) => ({
+      ok: false,
+      status: 429,
+      headers: { get: name => headers[name.toLowerCase()] ?? null },
+      json: async () => ({ error: { message } }),
+    });
+
+    test('reads the wait from the provider message or header', () => {
+      const parse = require('../src/routes/analyze').parseRetryAfterMs;
+      expect(parse({}, 'Please try again in 7.2075s. Need more tokens?')).toBe(7208);
+      expect(parse({}, 'Please try again in 450ms.')).toBe(450);
+      expect(parse({}, 'Please try again in 1m5.8s.')).toBe(65800);
+      expect(parse({ headers: { get: () => '12' } }, 'whatever')).toBe(12000);
+      expect(parse({}, 'something unrelated')).toBeNull();
+    });
+
+    test('a short rate limit is waited out and the user gets the answer', async () => {
+      global.fetch = jest.fn()
+        .mockResolvedValueOnce(limited('Rate limit reached. Please try again in 0.05s.'))
+        .mockResolvedValueOnce(validGroqResponse());
+
+      const res = await request(app).post('/api/analyze').send({ scrubbedText: 'Some contract text.' });
+
+      expect(res.status).toBe(200);
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
+
+    test('a long rate limit comes back as 429 with Retry-After instead of making the user wait', async () => {
+      global.fetch = jest.fn().mockResolvedValue(limited('Rate limit reached. Please try again in 45s.'));
+
+      const res = await request(app).post('/api/analyze').send({ scrubbedText: 'Some contract text.' });
+
+      expect(res.status).toBe(429);
+      expect(res.headers['retry-after']).toBe('45');
+      expect(res.body.retryAfter).toBe(45);
+      expect(res.body.error).toMatch(/busy/i);
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    test('gives up with 429 when short rate limits keep coming', async () => {
+      global.fetch = jest.fn().mockResolvedValue(limited('Rate limit reached. Please try again in 0.05s.'));
+
+      const res = await request(app).post('/api/analyze').send({ scrubbedText: 'Some contract text.' });
+
+      expect(res.status).toBe(429);
+      expect(global.fetch).toHaveBeenCalledTimes(3); // the first try plus two waits
+    });
+
+    test('a rate limit does not use up the retries meant for malformed answers', async () => {
+      global.fetch = jest.fn()
+        .mockResolvedValueOnce(limited('Rate limit reached. Please try again in 0.05s.'))
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ choices: [{ message: { content: 'not json' } }] }) })
+        .mockResolvedValueOnce(validGroqResponse());
+
+      const res = await request(app).post('/api/analyze').send({ scrubbedText: 'Some contract text.' });
+
+      expect(res.status).toBe(200);
+      expect(global.fetch).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  test('asks the model for room to finish its answer (reasoning shares the output budget)', async () => {
+    global.fetch = jest.fn().mockResolvedValue(validGroqResponse());
+    await request(app).post('/api/analyze').send({ scrubbedText: 'Some contract text.' });
+    expect(JSON.parse(global.fetch.mock.calls[0][1].body).max_tokens).toBe(4096);
+  });
+
   test('does not retry on a non-retryable error (e.g. upstream API error)', async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,

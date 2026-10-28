@@ -6,6 +6,21 @@ const router = express.Router();
 const MAX_INPUT_CHARS = 8000;
 const MAX_ATTEMPTS = 2;
 
+// The AI provider limits tokens per minute. A short wait is absorbed here, so the user never notices;
+// a long one is passed back as 429 + Retry-After and the app decides what to do.
+const RATE_LIMIT_WAIT_CAP_MS = 20000;
+const MAX_RATE_LIMIT_WAITS = 2;
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+/** How long the provider asks us to wait: its Retry-After header, else the "try again in 7.2s" in its message. */
+function parseRetryAfterMs(response, message) {
+  const header = Number(response.headers?.get?.('retry-after'));
+  if (Number.isFinite(header) && header > 0) return Math.ceil(header * 1000);
+  const m = String(message || '').match(/try again in\s+(?:(\d+)m(?!s))?\s*(?:([\d.]+)s)?\s*(?:([\d.]+)ms)?/i);
+  if (!m || (!m[1] && !m[2] && !m[3])) return null;
+  return Math.ceil((Number(m[1] || 0) * 60 + Number(m[2] || 0)) * 1000 + Number(m[3] || 0));
+}
+
 // Redaction numbers repeated kinds ([NAME 1], [NAME 2]); say what that means so the model keeps the parties apart.
 const PLACEHOLDER_NOTE = `\n\nNote: personal details were replaced by placeholders such as [NAME 1], [NAME 2], [EMAIL] or [PHONE 1]. The same placeholder always stands for the same person or item and different numbers for different ones, so use them to tell the parties apart (for example "[NAME 1]" and "[NAME 2]" are two different people). Do not comment on the placeholders themselves or treat them as missing information.`;
 
@@ -141,7 +156,7 @@ async function callGroq(systemPrompt, userContent) {
     body: JSON.stringify({
       model: 'openai/gpt-oss-120b',
       temperature: 0.2,
-      max_tokens: 2048,
+      max_tokens: 4096, // the model's reasoning shares this budget; 2048 cut long answers off mid-JSON
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userContent },
@@ -150,7 +165,12 @@ async function callGroq(systemPrompt, userContent) {
   });
 
   const data = await response.json();
-  if (data.error) throw new Error(data.error.message);
+  if (data.error) {
+    const err = new Error(data.error.message);
+    err.retryAfterMs = parseRetryAfterMs(response, data.error.message);
+    err.rateLimited = response.status === 429 || err.retryAfterMs !== null;
+    throw err;
+  }
 
   const raw = data.choices?.[0]?.message?.content?.trim();
   if (!raw) throw new Error('Empty response from Groq');
@@ -189,14 +209,29 @@ router.post('/', async (req, res) => {
   const userContent = `Analyze this contract:\n\n${scrubbedText.slice(0, MAX_INPUT_CHARS)}`;
 
   let lastErr;
+  let rateLimitWaits = 0;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
       const analysis = await callGroq(systemPrompt, userContent);
       return res.json({ ...analysis, truncated });
     } catch (err) {
       lastErr = err;
+      console.error(`Analyze attempt ${attempt} failed:`, err.rateLimited ? 'rate limited' : err.message);
+
+      if (err.rateLimited) {
+        const waitMs = err.retryAfterMs ?? 15000;
+        if (waitMs <= RATE_LIMIT_WAIT_CAP_MS && rateLimitWaits < MAX_RATE_LIMIT_WAITS) {
+          rateLimitWaits += 1;
+          await sleep(waitMs + 500);
+          attempt -= 1; // waiting out a rate limit is not a failed attempt
+          continue;
+        }
+        const retryAfter = Math.max(1, Math.ceil(waitMs / 1000));
+        res.set('Retry-After', String(retryAfter));
+        return res.status(429).json({ error: 'The AI service is busy right now. Please try again in a minute.', retryAfter });
+      }
+
       const retryable = err instanceof SyntaxError || err.name === 'ZodError';
-      console.error(`Analyze attempt ${attempt} failed:`, err.message);
       if (!retryable) break;
     }
   }
@@ -212,6 +247,8 @@ router.post('/', async (req, res) => {
 router.callGroq = callGroq;
 router.languageInstruction = languageInstruction;
 router.PROMPTS = PROMPTS;
+router.PLACEHOLDER_NOTE = PLACEHOLDER_NOTE;
+router.parseRetryAfterMs = parseRetryAfterMs;
 router.MAX_INPUT_CHARS = MAX_INPUT_CHARS;
 
 module.exports = router;

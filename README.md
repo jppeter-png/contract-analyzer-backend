@@ -138,6 +138,8 @@ Each issue's `type` is `unfair_clause` (an actual clause is present and disadvan
 
 `/privacy`, `/terms` and `/support` are served in English from `public/*.html`. Add `?lang=es|fr|de|pt|zh` for a translation (unknown codes fall back to English). Translations live in `src/pages/content/<lang>.js` and are rendered into the English page's styles by `src/pages/render.js`; `test/pages.test.js` checks that every translation has the same structure and links as the English page. When you edit an English page, update the content files too.
 
+**Rate limits.** The AI provider caps tokens per minute (8,000 on the free tier; one analysis uses about 3,500). `/api/analyze` waits out a short limit itself (up to 20 s, twice) and otherwise answers `429` with `Retry-After` and `retryAfter` seconds; the app shows a "service is busy" message, and for multi-section documents waits and retries the section. Answers are requested with `max_tokens: 4096` because the model's reasoning shares that budget and 2,048 cut long answers off mid-JSON.
+
 ## Known limitations
 
 - **No provider abstraction**: only Groq/GPT-OSS is wired up. See the note in Setup above if you want to swap models.

@@ -4,3 +4,6 @@ node_modules/
 .DS_Store
 eval/predictions.json
 *.traineddata
+
+# results of the whole-vs-split and redaction experiments (regenerate with the scripts in eval/split)
+eval/split/*_results.json
