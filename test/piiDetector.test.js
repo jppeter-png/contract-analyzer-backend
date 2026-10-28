@@ -48,7 +48,7 @@ describe('names — recall (each must be redacted and must not leak)', () => {
     for (const secret of mustRedact) {
       expect(scrubbed).not.toContain(secret);
     }
-    expect(scrubbed).toContain('[NAME]');
+    expect(scrubbed).toMatch(/\[NAME( \d)?\]/);
     expect(labels(findings)).toContain('Person names');
   });
 
@@ -167,7 +167,7 @@ describe('overlap handling', () => {
 
   test('placeholders from one detector are never re-read by another', () => {
     const { scrubbed } = scrubPII('Call 415-555-2671 or 415-555-2672.');
-    expect(scrubbed).toBe('Call [PHONE] or [PHONE].');
+    expect(scrubbed).toBe('Call [PHONE 1] or [PHONE 2].');
   });
 });
 
@@ -208,7 +208,7 @@ describe('regressions found while hardening the detector', () => {
 
   test('hyphenated ID values are caught (employee and policy numbers)', () => {
     const { scrubbed } = scrubPII('Reference employee ID: E-48213 and policy number HX-99120034.');
-    expect(scrubbed).toBe('Reference employee ID: [ID] and policy number [ID].');
+    expect(scrubbed).toBe('Reference employee ID: [ID 1] and policy number [ID 2].');
   });
 
   test('a street address does not swallow the sentence-ending period', () => {

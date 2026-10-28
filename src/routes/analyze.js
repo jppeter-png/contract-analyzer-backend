@@ -6,6 +6,9 @@ const router = express.Router();
 const MAX_INPUT_CHARS = 8000;
 const MAX_ATTEMPTS = 2;
 
+// Redaction numbers repeated kinds ([NAME 1], [NAME 2]); say what that means so the model keeps the parties apart.
+const PLACEHOLDER_NOTE = `\n\nNote: personal details were replaced by placeholders such as [NAME 1], [NAME 2], [EMAIL] or [PHONE 1]. The same placeholder always stands for the same person or item and different numbers for different ones, so use them to tell the parties apart (for example "[NAME 1]" and "[NAME 2]" are two different people). Do not comment on the placeholders themselves or treat them as missing information.`;
+
 const AnalysisSchema = z.object({
   overall_risk: z.enum(['high', 'medium', 'low']),
   category: z.string(),
@@ -178,6 +181,7 @@ router.post('/', async (req, res) => {
   }
 
   let systemPrompt = (PROMPTS[contractType] || PROMPTS.auto) + languageInstruction(outputLanguage);
+  systemPrompt += PLACEHOLDER_NOTE;
   if (chunkContext?.total > 1) {
     systemPrompt += `\n\nNote: this is section ${chunkContext.index} of ${chunkContext.total} of a longer contract that has been split due to length. Analyze only the provided section. Do not assume it is the complete contract, and do not list something under "missing_protections" solely because it isn't in this section — it may appear elsewhere.`;
   }

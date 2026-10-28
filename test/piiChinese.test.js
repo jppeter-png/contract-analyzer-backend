@@ -113,7 +113,8 @@ describe('regressions found while testing realistic Chinese contracts', () => {
   test('a bracketed party word between the role and the colon does not hide the name', () => {
     const { scrubbed } = scrubPII('出租人（甲方）：王建国\n承租人（乙方）：李梅\n甲方（签字）：王建国    乙方（签字）：李梅');
     expect(scrubbed).not.toMatch(/王建国|李梅/);
-    expect(scrubbed.match(/\[NAME\]/g)).toHaveLength(4);
+    expect(scrubbed.match(/\[NAME \d\]/g)).toHaveLength(4);
+    expect(scrubbed).toBe('出租人（甲方）：[NAME 1]\n承租人（乙方）：[NAME 2]\n甲方（签字）：[NAME 1]    乙方（签字）：[NAME 2]');
   });
 
   test('a birth date written before the cue is redacted', () => {

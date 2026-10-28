@@ -175,12 +175,12 @@ describe('mixed-language documents', () => {
 describe('regressions found while testing realistic contracts', () => {
   test('two names set apart by a wide gap (signature block) are redacted separately', () => {
     const { scrubbed } = scrubPII('Thomas Becker                Katharina Wagner\nVermieter                    Mieterin');
-    expect(scrubbed).toBe('[NAME]                [NAME]\nVermieter                    Mieterin');
+    expect(scrubbed).toBe('[NAME 1]                [NAME 2]\nVermieter                    Mieterin');
   });
 
   test('a label word such as "Firmado" is not absorbed into the name next to it', () => {
     const { scrubbed } = scrubPII('Firmado: Alejandro Fernández Ruiz        Firmado: Lucía Martín Gómez');
-    expect(scrubbed).toBe('Firmado: [NAME]        Firmado: [NAME]');
+    expect(scrubbed).toBe('Firmado: [NAME 1]        Firmado: [NAME 2]');
   });
 
   test('an address with two linking words ("de la") is fully redacted', () => {
