@@ -206,7 +206,7 @@ const support = {
   faqHeading: 'Questions fréquentes',
   privacyLabel: 'Politique de confidentialité',
   termsLabel: 'Conditions d’utilisation',
-  credit: 'Idée de l’app : Chrystal Ding',
+  credit: 'Idée originale de Chrystal Ding',
   faq: [
     { id: 'account', q: 'Dois-je créer un compte ?', a: 'Non. Il n’y a ni inscription, ni connexion, ni profil : ouvrez l’app et commencez tout de suite à analyser un document.' },
     { id: 'file-types', q: 'Quels types de fichiers sont pris en charge ?', a: 'Les fichiers PDF et DOCX, le texte collé et les pages photographiées avec votre appareil photo.' },
