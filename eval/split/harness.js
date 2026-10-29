@@ -72,6 +72,37 @@ async function analyzeWhole({ text, contractType, label }) {
   }, label);
 }
 
+/**
+ * One section of a split contract, called directly (not through the route) so a definitions digest can be
+ * added without hitting the route's 8,000-character input cap. Same prompt, same section note as the route.
+ */
+async function analyzeSection({ text, contractType, chunkContext, digest, label }) {
+  const note = `\n\nNote: this is section ${chunkContext.index} of ${chunkContext.total} of a longer contract that has been split due to length. Analyze only the provided section. Do not assume it is the complete contract, and do not list something under "missing_protections" solely because it isn't in this section — it may appear elsewhere.`;
+  const digestNote = digest
+    ? '\n\nThe user message starts with "Defined terms from earlier sections" of this same contract. Use them to understand the terms this section relies on: if a definition makes a clause in this section riskier than it reads, flag the clause and say what the definition does. Where a term has several versions, the latest one listed applies; a change inside this section applies from where it appears. Do not report issues about the definitions themselves, they were reviewed in the section where they appear.'
+    : '';
+  const systemPrompt = (analyze.PROMPTS[contractType] || analyze.PROMPTS.auto) + analyze.PLACEHOLDER_NOTE + note + digestNote;
+  const user = digest
+    ? `Defined terms from earlier sections:\n${digest}\n\n---\nAnalyze this section:\n\n${text}`
+    : `Analyze this contract:\n\n${text}`;
+  return withRetry(async () => {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
+      body: JSON.stringify({
+        model: 'openai/gpt-oss-120b', temperature: 0.2, max_tokens: 4096,
+        messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: user }],
+      }),
+    });
+    const data = await response.json();
+    if (data.error) throw new Error(data.error.message);
+    const raw = data.choices?.[0]?.message?.content?.trim();
+    if (!raw) throw new Error('Empty response');
+    const parsed = JSON.parse(raw.replace(/^```json\s*/i, '').replace(/```$/, '').trim());
+    return { ...parsed, truncated: false };
+  }, label);
+}
+
 const predText = issue => `${issue.category || ''} ${issue.title || ''} ${issue.description || ''}`.toLowerCase();
 
 /** Does this issue talk about the clause with this excerpt? (text overlap only, no category shortcut) */
@@ -83,4 +114,4 @@ function mentionsClause(issue, excerpt) {
   return overlap >= 4 || (excerptTokens.size > 0 && overlap / excerptTokens.size >= 0.3);
 }
 
-module.exports = { analyzeViaRoute, analyzeWhole, mentionsClause, predText, sleep, app };
+module.exports = { analyzeViaRoute, analyzeWhole, analyzeSection, mentionsClause, predText, sleep, app };

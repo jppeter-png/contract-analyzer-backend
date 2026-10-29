@@ -245,4 +245,4 @@ const service = {
   ],
 };
 
-module.exports = { LONG_CONTRACTS: [lease, employment, service] };
+module.exports = { LONG_CONTRACTS: [lease, employment, service], build };
