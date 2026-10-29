@@ -62,7 +62,9 @@ const BASE_RULES = `Respond ONLY with valid JSON. No markdown, no code blocks, n
 IMPORTANT — every issue's "type" must be exactly one of two things, and you must not blur them together:
 - "unfair_clause": an actual clause IS present in the text and it disadvantages the signing party (e.g. an overly broad non-compete, a one-sided indemnification clause).
 - "missing_protection": nothing adversarial is present — you're noting that a standard protection is simply absent (e.g. no severance clause, no cap on liability). This is not evidence the contract is unfair, just incomplete; do not let missing_protection issues alone push overall_risk above "medium", and never let them alone justify "high".
-A contract with no unfair_clause issues and only missing_protection issues should generally read as "low" or "medium" overall_risk, not "high" — absence of boilerplate is normal, not alarming.`;
+A contract with no unfair_clause issues and only missing_protection issues should generally read as "low" or "medium" overall_risk, not "high" — absence of boilerplate is normal, not alarming.
+
+DEFINED TERMS: Contracts often hide risk in their definitions. Before judging the clauses, read the definitions and any clause that changes them. When a clause uses a defined term, read it with the definition substituted in. Look especially for definitions that (a) include things the term would not normally cover, (b) exclude or carve out part of what the clause seems to give, often on a condition like payment or approval, or (c) leave the amount, scope or trigger to one party's discretion. If a definition makes a clause riskier or emptier than it reads, flag the clause itself, not only the definition, and name the definition in the description.`;
 
 const PROMPTS = {
   auto: `You are an expert legal contract analyst. First identify what type of contract this is, then analyze it thoroughly for risks, loopholes, unfair clauses, and missing protections relevant to that contract type. ${BASE_RULES}`,
