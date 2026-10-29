@@ -52,8 +52,8 @@ async function analyzeViaRoute({ text, contractType, chunkContext, label }) {
 }
 
 /** The whole document in one call (the route caps input at 8,000 characters, so this bypasses it). */
-async function analyzeWhole({ text, contractType, label }) {
-  const systemPrompt = (analyze.PROMPTS[contractType] || analyze.PROMPTS.auto) + analyze.PLACEHOLDER_NOTE;
+async function analyzeWhole({ text, contractType, label, extraSystem = '' }) {
+  const systemPrompt = (analyze.PROMPTS[contractType] || analyze.PROMPTS.auto) + analyze.PLACEHOLDER_NOTE + extraSystem;
   return withRetry(async () => {
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
