@@ -67,6 +67,7 @@ backend/
     │   ├── stoplist.js       # Legal boilerplate / organization words that are never names
     │   └── validators.js     # Luhn, IBAN mod-97, IPv4 range checks
     ├── textExtractor.js      # PDF / DOCX / TXT parsing
+    ├── logSafe.js            # Error summaries for logs that never quote document text
     └── routes/
         ├── scrub.js          # POST /api/scrub
         ├── analyze.js        # POST /api/analyze  (Groq / GPT-OSS 120B)
@@ -130,7 +131,7 @@ Accepts `{ scrubbedText, contractType, chunkContext, outputLanguage }`. `contrac
 
 Each issue's `type` is `unfair_clause` (an actual clause is present and disadvantages the signer) or `missing_protection` (nothing adversarial — a standard protection is simply absent). This distinction exists because the model was flagging absent-but-normal clauses (no severance provision, no liability cap, etc.) with the same severity treatment as real unfair clauses, which made short, otherwise-fair contracts read as "medium" or "high" risk. The prompt instructs the model not to let `missing_protection`-only findings push `overall_risk` above "medium". `type` is optional in the schema (older/malformed responses without it should be treated as `unfair_clause` by clients). See [`eval/results.md`](eval/results.md) for before/after numbers on this change.
 
-`truncated` is `true` when `scrubbedText` exceeded 8,000 characters and `chunkContext` wasn't set — i.e. only the first 8,000 characters were analyzed.
+`truncated` is `true` when `scrubbedText` exceeded 60,000 characters (about 15 pages) and `chunkContext` wasn't set — i.e. only the first 60,000 characters were analyzed. Older app versions send sections of up to 8,000 characters; both sizes work.
 
 ---
 
@@ -138,7 +139,11 @@ Each issue's `type` is `unfair_clause` (an actual clause is present and disadvan
 
 `/privacy`, `/terms` and `/support` are served in English from `public/*.html`. Add `?lang=es|fr|de|pt|zh` for a translation (unknown codes fall back to English). Translations live in `src/pages/content/<lang>.js` and are rendered into the English page's styles by `src/pages/render.js`; `test/pages.test.js` checks that every translation has the same structure and links as the English page. When you edit an English page, update the content files too.
 
-**Rate limits.** The AI provider caps tokens per minute (8,000 on the free tier; one analysis uses about 3,500). `/api/analyze` waits out a short limit itself (up to 20 s, twice) and otherwise answers `429` with `Retry-After` and `retryAfter` seconds; the app shows a "service is busy" message, and for multi-section documents waits and retries the section. Answers are requested with `max_tokens: 4096` because the model's reasoning shares that budget and 2,048 cut long answers off mid-JSON.
+**Rate limits.** The AI provider caps tokens per minute (8,000 on Groq's free tier, which the account has since left; one analysis uses about 3,500). `/api/analyze` waits out a short limit itself (up to 20 s, twice) and otherwise answers `429` with `Retry-After` and `retryAfter` seconds; the app shows a "service is busy" message, and for multi-section documents waits and retries the section. Answers are requested with `max_tokens: 4096` because the model's reasoning shares that budget and 2,048 cut long answers off mid-JSON.
+
+### Logging
+
+Documents pass through this server, so logs must never contain them. Documents live in memory only (no database, no uploads to disk) and error logging goes through `describeError` in `src/logSafe.js`: it records the error type, code and status, and drops messages that can quote text, such as JSON parse errors and Express body-parser errors (which carry the raw request body). `test/logSafe.test.js` checks that a malformed request body never reaches the log. Keep new `console.error` calls on `describeError`.
 
 ## Known limitations
 
@@ -166,7 +171,7 @@ Every detector reports spans against the **original** text; overlaps are resolve
 
 **Languages.** Spanish, French, German and Portuguese are supported alongside English, without guessing the document's language first (contracts are often bilingual, so every language's cues run on every document). Patterns are Unicode-aware, so `José`, `Müller` and `Gonçalves` are names like any other. Per language, `src/pii/langs.js` holds the role cues (`arrendatario`, `locataire`, `Mieter`, `locatário`), label cues, honorifics (`Sr.`, `Mme`, `Herr`), salutations, legal stop words, organization words and common first names and surnames. `structured.js` adds local address, phone and date-of-birth formats, and national IDs with checksum validators (Spanish DNI/NIE, Brazilian CPF, Portuguese NIF, French social security number) so they are caught even without a label. Add a language by adding a pack to `langs.js`, rules to `structured.js`, and cases to `test/piiMultilingual.test.js`.
 
-**Known limits:** name detection depends on capitalization, so an all-lowercase name (`mr. sanchez`) is not caught; a name with no cue and no lexicon support (rare surname, first mention, plain sentence) can be missed until it is mentioned again with a cue — this is more likely outside English, where the first-name and surname lists are shorter; German capitalizes every noun, so a short noun phrase directly after a role word (`Mieter Kleine Reparaturen`) can be over-redacted; unlabeled local phone numbers are only recognized in a few formats (French `06 12 34 56 78`, Spanish/Portuguese `612 345 678`), otherwise they need a label such as `Teléfono:`; address formats outside the US/UK/Canada and the four languages above are not recognized. Redaction is a safeguard, not a guarantee, which is why the app shows users exactly what will be sent before anything leaves their device.
+**Known limits:** name detection depends on capitalization, so an all-lowercase name (`mr. sanchez`) is not caught; a name with no cue and no lexicon support (rare surname, first mention, plain sentence) can be missed until it is mentioned again with a cue — this is more likely outside English, where the first-name and surname lists are shorter; German capitalizes every noun, so a short noun phrase directly after a role word (`Mieter Kleine Reparaturen`) can be over-redacted; unlabeled local phone numbers are only recognized in a few formats (French `06 12 34 56 78`, Spanish/Portuguese `612 345 678`), otherwise they need a label such as `Teléfono:`; address formats outside the US/UK/Canada and the four languages above are not recognized. Redaction is a safeguard, not a guarantee, which is why the app shows users the redacted text, with removed items marked, and asks for their consent before anything is sent to the AI provider. Redaction itself runs on this server, so the document reaches the server over HTTPS first; it is processed in memory and not stored or logged (see [Logging](#logging)).
 
 ## Evaluation
 

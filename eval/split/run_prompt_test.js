@@ -17,16 +17,7 @@ const RESULTS = path.join(__dirname, 'prompt_results.json');
 const DEFINED_TERMS_RULE = '\n\nDEFINED TERMS: Contracts often hide risk in their definitions. Before judging the clauses, read the definitions and any clause that changes them. When a clause uses a defined term, read it with the definition substituted in. Look especially for definitions that (a) include things the term would not normally cover, (b) exclude or carve out part of what the clause seems to give, often on a condition like payment or approval, or (c) leave the amount, scope or trigger to one party\'s discretion. If a definition makes a clause riskier or emptier than it reads, flag the clause itself, not only the definition, and name the definition in the description.';
 const ARMS = { baseline: '', 'defined-terms rule': DEFINED_TERMS_RULE };
 
-// Hinge term and wording that only follows from the definition, for the original traps (the quiet contracts carry theirs).
-const OLD = {
-  'additional-rent': { term: 'additional rent', awareOf: ['sole discretion', 'any kind', 'itemized', 'whatever', 'unspecified', 'open-ended'] },
-  'premises-damage': { term: 'premises damage', awareOf: ['wear and tear', 'ordinary', 'normal'] },
-  'cause-forfeiture': { term: 'cause', awareOf: ['sole judgment', 'reflects poorly', 'whether or not'] },
-  'confidentiality-liquidated': { term: 'confidential information', awareOf: ['general skills', 'any kind', 'whether or not'] },
-  'fees-payment': { term: 'fees', awareOf: ['posting', 'website', 'announce', 'additional charge', 'from time to time', 'any other charges'] },
-  'deliverables-ownership': { term: 'deliverables', awareOf: ['excluding', 'paid in full', 'not paid', 'cash', 'tools', 'excludes'] },
-  'termination-cause': { term: 'cause', awareOf: ['sole discretion', 'harmful', 'whether or not', 'considers'] },
-};
+const { OLD } = require('./hinges');
 const GROUPS = [
   { name: 'original traps', contracts: [...LONG_CONTRACTS, AMEND_CONTRACT], hinge: t => OLD[t.id] },
   { name: 'held-out quiet traps', contracts: QUIET_CONTRACTS, hinge: t => t },

@@ -126,10 +126,10 @@ describe('POST /api/analyze', () => {
     expect(global.fetch).toHaveBeenCalledTimes(2);
   });
 
-  test('sets truncated: true when input exceeds the 8,000 character cap', async () => {
+  test('sets truncated: true when input exceeds the 60,000 character cap', async () => {
     global.fetch = jest.fn().mockResolvedValue(validGroqResponse());
 
-    const longText = 'a'.repeat(9000);
+    const longText = 'a'.repeat(61000);
     const res = await request(app)
       .post('/api/analyze')
       .send({ scrubbedText: longText });
@@ -137,10 +137,10 @@ describe('POST /api/analyze', () => {
     expect(res.status).toBe(200);
     expect(res.body.truncated).toBe(true);
 
-    // the model should only ever see the capped text, not the full 9000 chars
+    // the model should only ever see the capped text, not the full 61000 chars
     const sentBody = JSON.parse(global.fetch.mock.calls[0][1].body);
     const userMessage = sentBody.messages.find(m => m.role === 'user').content;
-    expect(userMessage.length).toBeLessThan(9000);
+    expect(userMessage.length).toBeLessThan(61000);
   });
 
   test('chunkContext appends a section note to the system prompt and suppresses truncated', async () => {
@@ -266,7 +266,7 @@ describe('POST /api/analyze', () => {
   test('asks the model for room to finish its answer (reasoning shares the output budget)', async () => {
     global.fetch = jest.fn().mockResolvedValue(validGroqResponse());
     await request(app).post('/api/analyze').send({ scrubbedText: 'Some contract text.' });
-    expect(JSON.parse(global.fetch.mock.calls[0][1].body).max_tokens).toBe(4096);
+    expect(JSON.parse(global.fetch.mock.calls[0][1].body).max_tokens).toBe(8192);
   });
 
   test('does not retry on a non-retryable error (e.g. upstream API error)', async () => {

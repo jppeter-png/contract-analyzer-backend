@@ -17,4 +17,9 @@ function mergeAnalysesOldUnion(analyses) {
   return { ...merged, issues: unionIssues, missing_protections: [...new Set(analyses.flatMap(a => a.missing_protections || []))] };
 }
 
-module.exports = { chunkText, mergeAnalyses, mergeAnalysesOldUnion };
+// The experiments in this folder were run with 8,000-character sections; keep that the default even though the app now
+// uses a larger section size, so past experiments stay reproducible. Pass a size to test others.
+const PINNED_SECTION_CHARS = 8000;
+const chunkTextPinned = (text, maxLen = PINNED_SECTION_CHARS) => chunkText(text, maxLen);
+
+module.exports = { chunkText: chunkTextPinned, mergeAnalyses, mergeAnalysesOldUnion };

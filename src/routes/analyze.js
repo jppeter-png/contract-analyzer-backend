@@ -1,9 +1,12 @@
 const express = require('express');
 const { z } = require('zod');
 const { LANG_NAMES } = require('../pii/langs');
+const { describeError } = require('../logSafe');
 const router = express.Router();
 
-const MAX_INPUT_CHARS = 8000;
+// About 15 pages. Groq's gpt-oss-120b takes 131K tokens, so this is a quality/latency choice, not a hard limit:
+// whole-document reads beat 8,000-character sections in testing (eval/split/run_bigchunk_test.js).
+const MAX_INPUT_CHARS = 60000;
 const MAX_ATTEMPTS = 2;
 
 // The AI provider limits tokens per minute. A short wait is absorbed here, so the user never notices;
@@ -158,7 +161,7 @@ async function callGroq(systemPrompt, userContent) {
     body: JSON.stringify({
       model: 'openai/gpt-oss-120b',
       temperature: 0.2,
-      max_tokens: 4096, // the model's reasoning shares this budget; 2048 cut long answers off mid-JSON
+      max_tokens: 8192, // the model's reasoning shares this budget; 2048 cut long answers off mid-JSON, and a 60,000-character document needed ~3,200
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userContent },
@@ -218,7 +221,7 @@ router.post('/', async (req, res) => {
       return res.json({ ...analysis, truncated });
     } catch (err) {
       lastErr = err;
-      console.error(`Analyze attempt ${attempt} failed:`, err.rateLimited ? 'rate limited' : err.message);
+      console.error(`Analyze attempt ${attempt} failed:`, err.rateLimited ? 'rate limited' : describeError(err));
 
       if (err.rateLimited) {
         const waitMs = err.retryAfterMs ?? 15000;

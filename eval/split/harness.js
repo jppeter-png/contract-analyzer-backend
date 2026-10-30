@@ -11,7 +11,8 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /** Waits out Groq's "try again in Ns" rate limits; retries a few transient failures. */
 // Groq's free tier allows 8,000 tokens per minute and one analysis uses ~3,500, so calls are spaced out.
-const MIN_GAP_MS = 27000;
+const MIN_GAP_MS = Number(process.env.EVAL_GAP_MS ?? 27000); // set EVAL_GAP_MS=1000 on a paid Groq tier
+const counters = { calls: [] }; // per-call usage and finish reason, for the larger-section test
 let lastCallAt = 0;
 async function paced() {
   const wait = lastCallAt + MIN_GAP_MS - Date.now();
@@ -52,19 +53,20 @@ async function analyzeViaRoute({ text, contractType, chunkContext, label }) {
 }
 
 /** The whole document in one call (the route caps input at 8,000 characters, so this bypasses it). */
-async function analyzeWhole({ text, contractType, label, extraSystem = '' }) {
+async function analyzeWhole({ text, contractType, label, extraSystem = '', maxTokens = 4096 }) {
   const systemPrompt = (analyze.PROMPTS[contractType] || analyze.PROMPTS.auto) + analyze.PLACEHOLDER_NOTE + extraSystem;
   return withRetry(async () => {
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
       body: JSON.stringify({
-        model: 'openai/gpt-oss-120b', temperature: 0.2, max_tokens: 4096,
+        model: 'openai/gpt-oss-120b', temperature: 0.2, max_tokens: maxTokens,
         messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: `Analyze this contract:\n\n${text}` }],
       }),
     });
     const data = await response.json();
     if (data.error) throw new Error(data.error.message);
+    counters.calls.push({ label, prompt: data.usage?.prompt_tokens, completion: data.usage?.completion_tokens, finish: data.choices?.[0]?.finish_reason });
     const raw = data.choices?.[0]?.message?.content?.trim();
     if (!raw) throw new Error('Empty response');
     const parsed = JSON.parse(raw.replace(/^```json\s*/i, '').replace(/```$/, '').trim());
@@ -76,7 +78,7 @@ async function analyzeWhole({ text, contractType, label, extraSystem = '' }) {
  * One section of a split contract, called directly (not through the route) so a definitions digest can be
  * added without hitting the route's 8,000-character input cap. Same prompt, same section note as the route.
  */
-async function analyzeSection({ text, contractType, chunkContext, digest, label }) {
+async function analyzeSection({ text, contractType, chunkContext, digest, label, maxTokens = 4096 }) {
   const note = `\n\nNote: this is section ${chunkContext.index} of ${chunkContext.total} of a longer contract that has been split due to length. Analyze only the provided section. Do not assume it is the complete contract, and do not list something under "missing_protections" solely because it isn't in this section — it may appear elsewhere.`;
   const digestNote = digest
     ? '\n\nThe user message starts with "Defined terms from earlier sections" of this same contract. Use them to understand the terms this section relies on: if a definition makes a clause in this section riskier than it reads, flag the clause and say what the definition does. Where a term has several versions, the latest one listed applies; a change inside this section applies from where it appears. Do not report issues about the definitions themselves, they were reviewed in the section where they appear.'
@@ -90,12 +92,13 @@ async function analyzeSection({ text, contractType, chunkContext, digest, label 
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
       body: JSON.stringify({
-        model: 'openai/gpt-oss-120b', temperature: 0.2, max_tokens: 4096,
+        model: 'openai/gpt-oss-120b', temperature: 0.2, max_tokens: maxTokens,
         messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: user }],
       }),
     });
     const data = await response.json();
     if (data.error) throw new Error(data.error.message);
+    counters.calls.push({ label, prompt: data.usage?.prompt_tokens, completion: data.usage?.completion_tokens, finish: data.choices?.[0]?.finish_reason });
     const raw = data.choices?.[0]?.message?.content?.trim();
     if (!raw) throw new Error('Empty response');
     const parsed = JSON.parse(raw.replace(/^```json\s*/i, '').replace(/```$/, '').trim());
@@ -114,4 +117,4 @@ function mentionsClause(issue, excerpt) {
   return overlap >= 4 || (excerptTokens.size > 0 && overlap / excerptTokens.size >= 0.3);
 }
 
-module.exports = { analyzeViaRoute, analyzeWhole, analyzeSection, mentionsClause, predText, sleep, app };
+module.exports = { counters, analyzeViaRoute, analyzeWhole, analyzeSection, mentionsClause, predText, sleep, app };
