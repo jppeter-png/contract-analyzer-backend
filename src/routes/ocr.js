@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const Tesseract = require('tesseract.js');
 const { countWords, removeCjkSpacing } = require('../textStats');
+const { describeError } = require('../logSafe');
 
 // Tesseract language packs for the supported document languages. English is always
 // included (contracts quote English terms), and the total is capped so a request
@@ -81,7 +82,7 @@ router.post('/', upload.array('images', 20), async (req, res) => {
       ...summarizeConfidence(pageConfidences),
     });
   } catch (err) {
-    console.error('OCR error:', err.message);
+    console.error('OCR error:', describeError(err));
     res.status(500).json({ error: err.message || 'OCR failed' });
   }
 });

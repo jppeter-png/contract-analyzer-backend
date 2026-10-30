@@ -3,6 +3,7 @@ const multer = require('multer');
 const { extractText } = require('../textExtractor');
 const { scrubPII } = require('../piiScrubber');
 const { countWords } = require('../textStats');
+const { describeError } = require('../logSafe');
 
 const router = express.Router();
 
@@ -53,7 +54,7 @@ router.post('/', upload.single('file'), async (req, res) => {
       preview: scrubbed.slice(0, 600),
     });
   } catch (err) {
-    console.error('Scrub error:', err.message);
+    console.error('Scrub error:', describeError(err));
     res.status(500).json({ error: err.message || 'Failed to process document' });
   }
 });

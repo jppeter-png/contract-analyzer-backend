@@ -8,6 +8,7 @@ const scrubRouter = require('./src/routes/scrub');
 const analyzeRouter = require('./src/routes/analyze');
 const ocrRouter = require('./src/routes/ocr');
 const { getPage, PAGES } = require('./src/pages/render');
+const { describeError } = require('./src/logSafe');
 
 const app = express();
 
@@ -30,7 +31,7 @@ for (const page of PAGES) {
 }
 
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
+  console.error('Unhandled error:', describeError(err));
   res.status(500).json({ error: 'Internal server error' });
 });
 
