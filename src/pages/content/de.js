@@ -8,7 +8,7 @@ const privacy = {
   eyebrow: 'Datenschutzerklärung',
   appName,
   effective: 'Gültig ab',
-  date: '3. Oktober 2026',
+  date: '31. Oktober 2026',
   translationNote: note,
   appliesTo: 'Gilt für Document Risk Analyzer auf iOS und Android.',
   disclaimer: 'Diese Seite beschreibt die tatsächliche Datenverarbeitung von Document Risk Analyzer zum oben genannten Datum. Sie dient der Transparenz und der Einhaltung der Vorgaben der App-Stores und ersetzt keine unabhängige Rechtsberatung.',
@@ -120,7 +120,8 @@ const privacy = {
     contact: {
       h2: 'Kontakt',
       html: `      <p>Fragen zu dieser Erklärung oder zum Umgang mit Ihren Daten können Sie senden an:</p>
-      <p class="contact"><a href="mailto:contractanalyzer@icloud.com">contractanalyzer@icloud.com</a></p>`,
+      <p class="contact"><a href="mailto:contractanalyzer@icloud.com">contractanalyzer@icloud.com</a></p>
+      <p>Wenn Sie uns per E-Mail Feedback senden, zum Beispiel über die Feedback-Schaltflächen in der App, erhalten wir Ihre E-Mail-Adresse und das, was Sie schreiben. Die App hängt weder Ihr Dokument noch den Text der Analyse an; die E-Mail kann grundlegende technische Angaben enthalten, etwa App-Version, iOS-Version, Sprache, Dokumenttyp und Anzahl der gefundenen Probleme. Wir verwenden Feedback nur, um Ihnen zu antworten und die App zu verbessern.</p>`,
     },
   },
 };

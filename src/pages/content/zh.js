@@ -8,7 +8,7 @@ const privacy = {
   eyebrow: '隐私政策',
   appName,
   effective: '生效日期',
-  date: '2026年10月3日',
+  date: '2026年10月31日',
   translationNote: note,
   appliesTo: '适用于 iOS 和 Android 上的 Document Risk Analyzer。',
   disclaimer: '本页说明截至上述生效日期 Document Risk Analyzer 实际的数据处理做法。提供本页是出于透明度和应用商店合规的目的，不能替代独立的法律意见。',
@@ -120,7 +120,8 @@ const privacy = {
     contact: {
       h2: '联系我们',
       html: `      <p>如对本政策或您的数据处理方式有疑问，请发送至：</p>
-      <p class="contact"><a href="mailto:contractanalyzer@icloud.com">contractanalyzer@icloud.com</a></p>`,
+      <p class="contact"><a href="mailto:contractanalyzer@icloud.com">contractanalyzer@icloud.com</a></p>
+      <p>如果您通过电子邮件向我们发送反馈，例如使用应用中的反馈按钮，我们会收到您的电子邮件地址和您所写的内容。应用不会附上您的文档或分析文本；邮件可能包含基本的技术信息，如应用版本、iOS 版本、语言、文档类型和发现的问题数量。我们仅将反馈用于回复您和改进应用。</p>`,
     },
   },
 };
