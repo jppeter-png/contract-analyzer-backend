@@ -77,3 +77,21 @@ describe('page routes', () => {
     for (const code of OTHER) expect(res.text).toContain(`hreflang="${code}"`);
   });
 });
+
+describe('app-ads.txt', () => {
+  test('is served as plain text at the root with the AdMob publisher line', async () => {
+    const res = await request(app).get('/app-ads.txt');
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toMatch(/^text\/plain/);
+    expect(res.text.trim()).toBe('google.com, pub-4330297206877846, DIRECT, f08c47fec0942fa0');
+  });
+});
+
+describe('landing page', () => {
+  test('serves an HTML page at the root that links to the legal pages', async () => {
+    const res = await request(app).get('/');
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toMatch(/^text\/html/);
+    for (const page of PAGES) expect(res.text).toContain(`href="/${page}"`);
+  });
+});

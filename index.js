@@ -25,6 +25,15 @@ app.use('/api/ocr', apiLimiter, ocrRouter);
 
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
+// Landing page: the developer website listed in the App Store points here.
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+
+// Lets ad networks verify who is authorised to sell this app's ad space (IAB app-ads.txt).
+// Must stay at the root of the domain listed as the developer website in the App Store.
+app.get('/app-ads.txt', (req, res) => {
+  res.type('text/plain').send('google.com, pub-4330297206877846, DIRECT, f08c47fec0942fa0\n');
+});
+
 // Legal pages are English by default; ?lang=es|fr|de|pt|zh serves a translation.
 for (const page of PAGES) {
   app.get(`/${page}`, (req, res) => res.type('html').send(getPage(page, req.query.lang)));
