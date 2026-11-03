@@ -5,7 +5,7 @@ const { detectChineseNames } = require('./chinese');
 const {
   LEGAL_STOP, ORG_WORDS, PARTICLES, ORGISH_DEFINED_TERMS, ROLE_CUES, LABEL_CUES,
   HONORIFICS, STRICT_HONORIFICS, SALUTATIONS, BETWEEN_WORDS, AND_WORDS, GENERIC_EMAIL_LOCALS,
-  SIGNATURE_CONTEXT,
+  SIGNATURE_STRONG, SIGNATURE_ROLE,
 } = require('./stoplist');
 
 const ACCEPT_THRESHOLD = 3;
@@ -89,7 +89,24 @@ function addCandidate(cands, rawPhrase, ev, extra = {}) {
   }
 }
 
-function score(c) {
+// Words the document itself uses as ordinary lowercase words ("workplace", "disability", "performance"). Names are
+// not written in lowercase mid-sentence, so a capitalized phrase made only of such words is a heading or a term
+// ("Job Performance", "Workplace Violence"), not a person. Emails and URLs are skipped: they hold lowercase names.
+function ordinaryWords(text) {
+  const words = new Set();
+  const re = rx(`(?<![\\p{L}\\p{N}@./_:\\-])(${LO}{2,}(?:-${LO}+)*)(?![\\p{L}\\p{N}@_/\\-])`, 'g');
+  let m;
+  while ((m = re.exec(text)) !== null) words.add(fold(m[1]));
+  return words;
+}
+const isOrdinary = (ordinary, token) => {
+  const word = fold(token.replace(/\.$/, '').replace(/’/g, "'"));
+  if (ordinary.has(word)) return true;
+  const parts = word.split('-');
+  return parts.length > 1 && parts.every(p => p.length > 1 && ordinary.has(p));
+};
+
+function score(c, ordinary = new Set()) {
   const T = c.tokens;
   const words = T.filter(t => !isInitial(t));
   if (!words.length) return 0;
@@ -105,6 +122,11 @@ function score(c) {
   if (c.ev === 0 && !lexicalPair && !hasLexicalSupport(words)) return 0;
   // all-caps phrases are usually headings or company names; demand strong evidence
   if (c.ev < 3 && words.every(isAllCaps) && !hasLexicalSupport(words)) return 0;
+  // a phrase of ordinary words ("Job Performance") is a heading or term unless a known name is in it
+  // (only for the weakest evidence: a role label or "between X and Y" is a real cue and stays trusted)
+  if (c.ev === 0 && !hasLexicalSupport(words) && words.every(w => isOrdinary(ordinary, w))) return 0;
+  // "TriNet HR III": a generational suffix only makes a name when something in the phrase is a known name
+  if (c.ev < 3 && !hasLexicalSupport(words) && NAME_SUFFIXES.has(norm(T[T.length - 1])) && T.length > 1) return 0;
 
   let s = c.ev;
   if (firstIsFirstName) s += 2;
@@ -184,7 +206,10 @@ function collectCandidates(text) {
     const m = lineRe.exec(lines[i]);
     if (!m) continue;
     const near = [lines[i - 2], lines[i - 1], lines[i + 1], lines[i + 2]].filter(Boolean).join('\n');
-    if (SIGNATURE_CONTEXT.test(near)) addCandidate(cands, m[1], 2);
+    // A signature marker nearby, or a short role label right next to the line ("Tenant", "Landlord:"). A role word
+    // inside a sentence does not count: in a handbook every heading has "employee" a line or two away.
+    const roleLabel = [lines[i - 1], lines[i + 1]].some(l => l && l.trim().length <= 30 && SIGNATURE_ROLE.test(l));
+    if (SIGNATURE_STRONG.test(near) || roleLabel) addCandidate(cands, m[1], 2);
   }
 
   // Email local parts ("jane.doe@...") name the person for every other mention
@@ -235,7 +260,8 @@ function tokenSpans(text, token) {
 }
 
 function detectNames(text) {
-  const accepted = [...collectCandidates(text).values()].filter(c => score(c) >= ACCEPT_THRESHOLD);
+  const ordinary = ordinaryWords(text);
+  const accepted = [...collectCandidates(text).values()].filter(c => score(c, ordinary) >= ACCEPT_THRESHOLD);
   const spans = [];
 
   const matches = (re, priority, skipTitleContinuations) => {

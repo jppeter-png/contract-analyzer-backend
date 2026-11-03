@@ -40,6 +40,14 @@ const LEGAL_STOP_EN = set(`
   up down out off over under after before during within without between among upon
   dear sincerely regards sir madam page pages draft final copy
   inc llc llp ltd corp co plc
+
+  number numbers guideline guidelines workplace performance violence disability insurance leave time off paid pto
+  vacation holiday holidays sick overtime hours attendance conduct harassment discrimination safety health dental vision
+  medical retirement plan plans program programs training review reviews evaluation evaluations discipline disciplinary
+  action actions grievance complaint complaints procedure procedures standards expectations responsibilities duties
+  personnel human resources department reasonable accommodation accommodations assistance social media technology use
+  records open door code dress identification equal opportunity accrual method family medical jury duty bereavement
+  remote expense reimbursement reimbursements drug alcohol gifts entertainment conflicts interest punctuality
 `);
 
 // A phrase containing any of these is treated as an organization, not a person
@@ -89,8 +97,10 @@ const GENERIC_EMAIL_LOCALS_EN = set(`
   webmaster mail email enquiries inquiries general reception orders
 `);
 
-const SIGNATURE_CONTEXT_EN =
-  /_{3,}|\bsignature\b|\bsigned\b|\bdate\s*:|^\s*by\s*:|\bprint(?:ed)?\b|\btitle\s*:|\bwitness\b|\b(?:tenant|landlord|employee|employer|lessee|lessor|borrower|lender|buyer|seller|client|contractor|owner|guarantor)\b/i;
+// Words that mark a signature block by themselves. Role words ("employee", "client") are far too common in
+// ordinary prose to count that way, so they are kept apart (SIGNATURE_ROLE) and only count on a short label line.
+const SIGNATURE_STRONG_EN = /_{3,}|\bsignature\b|\bsigned\b|\bdate\s*:|^\s*by\s*:|\bprint(?:ed)?\b|\btitle\s*:|\bwitness\b/i;
+const SIGNATURE_ROLE_EN = /\b(?:tenant|landlord|employee|employer|lessee|lessor|borrower|lender|buyer|seller|client|contractor|owner|guarantor)\b/i;
 
 const LEGAL_STOP = merge(LEGAL_STOP_EN, langs.LEGAL_STOP);
 const ORG_WORDS = merge(ORG_WORDS_EN, langs.ORG_WORDS);
@@ -100,11 +110,12 @@ const unique = list => [...new Set(list)];
 const ROLE_CUES = unique([...ROLE_CUES_EN, ...langs.ROLE_CUES]);
 const LABEL_CUES = unique([...LABEL_CUES_EN, ...langs.LABEL_CUES]);
 const HONORIFICS = unique([...HONORIFICS_EN, ...langs.HONORIFICS]);
-const SIGNATURE_CONTEXT = new RegExp(`${SIGNATURE_CONTEXT_EN.source}|\\b(?:${langs.SIGNATURE_CONTEXT_SOURCE}|${langs.ROLE_CUES.map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`, 'iu');
+const SIGNATURE_STRONG = new RegExp(`${SIGNATURE_STRONG_EN.source}|\\b(?:${langs.SIGNATURE_CONTEXT_SOURCE})\\b`, 'iu');
+const SIGNATURE_ROLE = new RegExp(`${SIGNATURE_ROLE_EN.source}|\\b(?:${langs.ROLE_CUES.map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b`, 'iu');
 
 module.exports = {
   LEGAL_STOP, ORG_WORDS, PARTICLES, ORGISH_DEFINED_TERMS, ROLE_CUES, LABEL_CUES,
-  HONORIFICS, GENERIC_EMAIL_LOCALS, SIGNATURE_CONTEXT,
+  HONORIFICS, GENERIC_EMAIL_LOCALS, SIGNATURE_STRONG, SIGNATURE_ROLE,
   STRICT_HONORIFICS: langs.STRICT_HONORIFICS,
   SALUTATIONS: langs.SALUTATIONS,
   BETWEEN_WORDS: ['between', ...langs.BETWEEN_WORDS],
