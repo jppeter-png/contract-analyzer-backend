@@ -95,3 +95,13 @@ describe('landing page', () => {
     for (const page of PAGES) expect(res.text).toContain(`href="/${page}"`);
   });
 });
+
+describe('robots.txt', () => {
+  test('lets crawlers read the site (needed for app-ads.txt) but not the API', async () => {
+    const res = await request(app).get('/robots.txt');
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toMatch(/^text\/plain/);
+    expect(res.text).not.toMatch(/^Disallow:\s*\/\s*$/m);
+    expect(res.text).toMatch(/^Disallow:\s*\/api\/\s*$/m);
+  });
+});
