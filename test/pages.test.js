@@ -97,11 +97,12 @@ describe('landing page', () => {
 });
 
 describe('robots.txt', () => {
-  test('lets crawlers read the site (needed for app-ads.txt) but not the API', async () => {
+  test('lets crawlers read the whole site (needed for app-ads.txt)', async () => {
     const res = await request(app).get('/robots.txt');
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/^text\/plain/);
     expect(res.text).not.toMatch(/^Disallow:\s*\/\s*$/m);
-    expect(res.text).toMatch(/^Disallow:\s*\/api\/\s*$/m);
+    expect(res.text).not.toMatch(/^Disallow:\s*\S/m);
+    expect(res.text).toMatch(/^Allow:\s*\/\s*$/m);
   });
 });

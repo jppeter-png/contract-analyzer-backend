@@ -30,7 +30,7 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.ht
 
 // Without this, Render's default robots.txt disallows everything and ad networks cannot read app-ads.txt.
 app.get('/robots.txt', (req, res) => {
-  res.type('text/plain').send('User-agent: *\nDisallow: /api/\n');
+  res.type('text/plain').send('User-agent: *\nAllow: /\n');
 });
 
 // Lets ad networks verify who is authorised to sell this app's ad space (IAB app-ads.txt).
