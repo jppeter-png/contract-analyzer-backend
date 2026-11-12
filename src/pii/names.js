@@ -54,12 +54,20 @@ const hasLexicalSupport = tokens => tokens.some(t => isFirstName(t) || isLastNam
 const TITLE_CONTINUATIONS = new Set([
   ...ORG_WORDS, 'day', 'act', 'law', 'center', 'centre', 'hall', 'park', 'hospital', 'school', 'award',
   'prize', 'memorial', 'building', 'tower', 'bridge', 'airport', 'stadium', 'library', 'museum', 'street',
-  'avenue', 'road',
+  'avenue', 'road', 'boulevard', 'blvd', 'drive', 'court', 'creek', 'heights', 'gardens', 'plaza', 'manor', 'highway',
+  'parkway', 'terrace', 'trail', 'crossing', 'square', 'lane', 'way',
 ]);
 const followedByTitleWord = (text, end) => {
   const m = /^\.?[ \t]+(\p{L}+)/u.exec(text.slice(end, end + 40));
   return !!m && TITLE_CONTINUATIONS.has(norm(m[1]));
 };
+
+// A street or place word closing a phrase ("Grant Avenue", "Willow Creek") marks an address or a development. Words that
+// are also common surnames (Park, Hill, Lane, Rose, Grant) are left out on purpose, so "Sung Park" is still a name.
+const PLACE_SUFFIXES = new Set([
+  'street', 'avenue', 'boulevard', 'blvd', 'road', 'drive', 'court', 'creek', 'heights', 'gardens', 'plaza',
+  'manor', 'highway', 'parkway', 'terrace', 'trail', 'crossing', 'square',
+]);
 
 const NAME_SUFFIXES = new Set(['jr', 'sr', 'ii', 'iii', 'iv', 'esq', 'phd', 'md', 'ph.d', 'm.d']);
 
@@ -120,6 +128,8 @@ function score(c, ordinary = new Set()) {
   if (T.length === 1 && c.ev === 0) return 0; // a lone word needs real context
   // compromise's people() alone is too eager (it labels all-caps headings as people)
   if (c.ev === 0 && !lexicalPair && !hasLexicalSupport(words)) return 0;
+  // an address or development name, unless something strong ("Tenant:", "Mr.") says it is a person
+  if (c.ev < 3 && T.length > 1 && PLACE_SUFFIXES.has(norm(T[T.length - 1]))) return 0;
   // all-caps phrases are usually headings or company names; demand strong evidence
   if (c.ev < 3 && words.every(isAllCaps) && !hasLexicalSupport(words)) return 0;
   // a phrase of ordinary words ("Job Performance") is a heading or term unless a known name is in it
@@ -209,6 +219,10 @@ function collectCandidates(text) {
     // A signature marker nearby, or a short role label right next to the line ("Tenant", "Landlord:"). A role word
     // inside a sentence does not count: in a handbook every heading has "employee" a line or two away.
     const roleLabel = [lines[i - 1], lines[i + 1]].some(l => l && l.trim().length <= 30 && SIGNATURE_ROLE.test(l));
+    // A real signature line is just the name. A line that loses words to the stop list ("Virginia Residential Lease
+    // Agreement" under a repeated "Initials:" page header) is a title, not a person.
+    const lineTokens = m[1].replace(/,/g, '').trim().split(/[ \t]+/);
+    if (trimStop(lineTokens).length !== lineTokens.length) continue;
     if (SIGNATURE_STRONG.test(near) || roleLabel) addCandidate(cands, m[1], 2);
   }
 

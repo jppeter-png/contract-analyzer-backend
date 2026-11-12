@@ -50,3 +50,64 @@ describe('real names still found next to role words and in signature blocks', ()
     expect(nameHits('Each employee must read the policy.\nWorkplace Guidelines\nThe company expects the employee to comply.')).toEqual([]);
   });
 });
+
+describe('a document title under a repeated page header is not a name', () => {
+  // The lease repeats "Initials: Tenant___ Landlord/Agent___" on every page, which sits within two lines of the title.
+  const header = 'Initials:   Tenant_________           Landlord/Agent____________    1';
+  const lease = [
+    header,
+    'Virginia Residential Lease Agreement',
+    '(hereinafter known as "Lease")',
+    'In compliance with Virginia Code 55-248.13, Landlord shall maintain the premises.',
+    'This Lease is governed by applicable Virginia law and the Virginia National Guard provisions.',
+  ].join('\n');
+
+  test('the state in a lease title and in its legal citations is left alone', () => {
+    expect(nameHits(lease)).toEqual([]);
+    expect(scrubPII(lease).scrubbed).toContain('Virginia Residential Lease Agreement');
+  });
+
+  test('a real name on its own line in a signature block is still found', () => {
+    const signed = `${lease}\n\nTenant signature:\nJordan Ellis\n`;
+    expect(nameHits(signed)).toContain('Jordan Ellis');
+  });
+});
+
+describe('street addresses that contain human names are hidden as one address', () => {
+  const run = text => scrubPII(text).scrubbed;
+
+  test.each([
+    ['78 Jordan Ellis Drive, Springfield, VA 22150', 'The premises are at '],
+    ['1200 Martin Luther King Jr Blvd, Fairfax, VA 22030', 'Landlord address: '],
+    ['450 Casey Rivera Lane, Reston, VA 20191', 'Send notices to '],
+    ['22 Charlotte Street, Charlotte, NC 28202', 'The office is at '],
+  ])('"%s" leaves no part of the address behind', (address, lead) => {
+    const out = run(`${lead}${address} and rent is due monthly.`);
+    expect(out).toBe(`${lead}[ADDRESS] and rent is due monthly.`);
+  });
+
+  test('a person named in the same sentence is still hidden separately', () => {
+    const out = run('Landlord: Jordan Ellis, 450 Casey Rivera Lane, Reston, VA 20191.');
+    expect(out).toBe('Landlord: [NAME], [ADDRESS].');
+  });
+});
+
+describe('street and place names are not people', () => {
+  const left = name => {
+    const text = `The building is called ${name} and it is near the river.`;
+    return scrubPII(text).scrubbed === text;
+  };
+
+  test.each([
+    'Willow Creek', 'Grant Avenue', 'Martin Luther King Jr Blvd', 'Washington Street', 'Jackson Heights',
+    'Lincoln Park', 'Brookside Manor', 'Victoria Gardens', 'Kingston Plaza',
+  ])('"%s" is left alone', name => {
+    expect(left(name)).toBe(true);
+  });
+
+  test('a person whose surname is also a street word is still found when something marks them as a person', () => {
+    for (const name of ['Sung Park', 'Mary Street', 'Jordan Hill', 'Kim Grant']) {
+      expect(nameHits(`Tenant: ${name}. The tenant pays rent monthly.`)).toContain(name);
+    }
+  });
+});
