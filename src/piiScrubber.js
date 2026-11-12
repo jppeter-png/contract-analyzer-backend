@@ -22,6 +22,11 @@ function resolveOverlaps(spans, length) {
 }
 
 const NAMES = 'Person names';
+const CUSTOM = 'Hidden by you';
+const CUSTOM_PRIORITY = 200; // what the user typed beats every detector
+const MAX_TERMS = 50;
+const MAX_TERM_LENGTH = 100;
+const MIN_TERM_LENGTH = 2;
 const wordsOf = value => value.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
 
 /**
@@ -90,9 +95,90 @@ function numberPlaceholders(text, spans) {
   };
 }
 
-function scrubPII(text) {
-  const spans = resolveOverlaps([...findStructured(text), ...detectNames(text)], text.length);
-  const tagFor = numberPlaceholders(text, spans);
+
+const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// Scripts written without spaces: a term inside a longer run is still that term.
+const UNSPACED = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
+
+/** Trim, collapse spaces, drop too-short or repeated terms (case-insensitive), keep the user's order. */
+function normalizeTerms(terms) {
+  const seen = new Set();
+  const out = [];
+  for (const raw of Array.isArray(terms) ? terms : []) {
+    if (typeof raw !== 'string') continue;
+    const term = raw.normalize('NFC').replace(/\s+/g, ' ').trim();
+    if (term.length < MIN_TERM_LENGTH || term.length > MAX_TERM_LENGTH) continue;
+    const key = term.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(term);
+  }
+  return out.slice(0, MAX_TERMS);
+}
+
+/**
+ * Matches the term as whole words, ignoring case and tolerating any punctuation or line breaks
+ * between its words ("555 0142" also finds "555-0142"; "14 Oak Lane" finds "14 Oak\nLane").
+ */
+function termRegex(term) {
+  const tokens = term.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  if (!tokens.length) return null;
+  const body = tokens.map(escapeRe).join('[^\\p{L}\\p{N}]{1,4}');
+  return UNSPACED.test(term)
+    ? new RegExp(body, 'giu')
+    : new RegExp(`(?<![\\p{L}\\p{N}])${body}(?![\\p{L}\\p{N}])`, 'giu');
+}
+
+// Placeholders from an earlier pass ([NAME 1], [HIDDEN 2]) are never matched, so a term like "NAME" cannot corrupt one.
+const PLACEHOLDER = /\[[A-Z]{2,10}(?: \d+)?\]/g;
+
+function findCustom(text, terms) {
+  const protectedRanges = [...text.matchAll(PLACEHOLDER)].map(m => [m.index, m.index + m[0].length]);
+  const inPlaceholder = (start, end) => protectedRanges.some(([a, b]) => start < b && end > a);
+  const spans = [];
+  const matchCounts = terms.map((term, termIndex) => {
+    const re = termRegex(term);
+    let count = 0;
+    if (re) {
+      for (const m of text.matchAll(re)) {
+        if (!m[0] || (protectedRanges.length && inPlaceholder(m.index, m.index + m[0].length))) continue;
+        count += 1;
+        spans.push({ start: m.index, end: m.index + m[0].length, label: CUSTOM, tag: '[HIDDEN]', priority: CUSTOM_PRIORITY, termIndex });
+      }
+    }
+    return { term, count };
+  });
+  return { spans, matchCounts };
+}
+
+// A second pass over already-scrubbed text must carry on after the [HIDDEN n] already there.
+function highestHiddenNumber(text) {
+  let max = 0;
+  for (const m of text.matchAll(/\[HIDDEN (\d+)\]/g)) max = Math.max(max, Number(m[1]));
+  return max;
+}
+
+/** Same person or place written several ways ("Jordan Ellis", "Ellis") shares one number. */
+function customTagger(text, spans) {
+  const customSpans = spans.filter(s => s.label === CUSTOM);
+  const numbers = groupNames(customSpans.map(s => text.slice(s.start, s.end)));
+  const base = highestHiddenNumber(text);
+  return span => `[HIDDEN ${base + numbers.get(text.slice(span.start, span.end))}]`;
+}
+
+/**
+ * options.customTerms: strings the user asked to hide (names, addresses, IDs). They are always hidden,
+ *   and win over automatic detection where the two overlap.
+ * options.autoDetect:  false hides ONLY the custom terms and looks for nothing else.
+ */
+function scrubPII(text, { customTerms = [], autoDetect = true } = {}) {
+  const terms = normalizeTerms(customTerms);
+  const custom = findCustom(text, terms);
+  const detected = autoDetect ? [...findStructured(text), ...detectNames(text)] : [];
+  const spans = resolveOverlaps([...custom.spans, ...detected], text.length);
+  const autoTag = numberPlaceholders(text, spans.filter(s => s.label !== CUSTOM));
+  const customTag = customTagger(text, spans);
+  const tagFor = span => (span.label === CUSTOM ? customTag(span) : autoTag(span));
 
   let scrubbed = '';
   let cursor = 0;
@@ -109,7 +195,7 @@ function scrubPII(text) {
   }
   scrubbed += text.slice(cursor);
 
-  const order = [...LABEL_ORDER, NAMES];
+  const order = [CUSTOM, ...LABEL_ORDER, NAMES];
   const findings = order
     .filter(label => byLabel.has(label))
     .map(label => {
@@ -117,7 +203,7 @@ function scrubPII(text) {
       return { label, count, redacted: [...seen] };
     });
 
-  return { scrubbed, findings };
+  return { scrubbed, findings, termMatches: custom.matchCounts };
 }
 
-module.exports = { scrubPII };
+module.exports = { scrubPII, normalizeTerms, MAX_TERMS, MAX_TERM_LENGTH, CUSTOM_LABEL: CUSTOM };

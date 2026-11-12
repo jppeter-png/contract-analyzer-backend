@@ -50,6 +50,14 @@ describe('translated legal pages', () => {
       expect(html).toContain('groq.com');
     }
   });
+
+  test('every privacy page explains the names and addresses users can ask to hide', () => {
+    for (const lang of ['en', ...OTHER]) {
+      const html = renderPage('privacy', lang);
+      expect(html).toContain('[HIDDEN 1]');
+      expect(html).not.toMatch(/no setting to turn it off/i);
+    }
+  });
 });
 
 describe('page routes', () => {

@@ -8,7 +8,7 @@ const privacy = {
   eyebrow: 'Politique de confidentialité',
   appName,
   effective: 'En vigueur depuis le',
-  date: '31 octobre 2026',
+  date: '12 novembre 2026',
   translationNote: note,
   appliesTo: 'S’applique à Document Risk Analyzer sur iOS et Android.',
   disclaimer: 'Cette page décrit les pratiques réelles de Document Risk Analyzer en matière de données à la date indiquée ci-dessus. Elle est fournie par souci de transparence et pour la conformité aux boutiques d’applications, et ne remplace pas un conseil juridique indépendant.',
@@ -26,7 +26,7 @@ const privacy = {
   },
   summaryLabel: 'En bref',
   summary: [
-    'Votre document est analysé automatiquement pour repérer les identifiants personnels avant que quoi que ce soit ne soit envoyé à l’analyse par IA. Les adresses e-mail, numéros de téléphone, numéros de sécurité sociale et motifs similaires sont remplacés, ainsi que les noms lorsqu’ils sont détectés. La détection n’est pas parfaite : vous voyez donc un aperçu exact de ce qui sera envoyé.',
+    'Votre document est analysé automatiquement pour repérer les identifiants personnels avant que quoi que ce soit ne soit envoyé à l’analyse par IA. Les adresses e-mail, numéros de téléphone, numéros de sécurité sociale et motifs similaires sont remplacés, ainsi que les noms lorsqu’ils sont détectés. La détection n’est pas parfaite : vous voyez donc un aperçu exact de ce qui sera envoyé. Vous pouvez aussi ajouter des noms, adresses ou numéros à masquer, et désactiver la détection automatique ; l’app vous prévient si vous le faites.',
     'Le texte masqué est envoyé à Groq, un service d’IA tiers, pour rédiger votre analyse, et seulement après que vous avez appuyé sur Autoriser dans l’app. Nous avons activé le paramètre de rétention zéro des données de Groq : Groq ne le conserve donc pas.',
     'Nous ne conservons pas vos documents. Les textes et les images sont traités à chaque requête, puis supprimés dès que votre rapport est renvoyé.',
     'L’historique de vos analyses reste uniquement sur votre appareil. Nous ne le téléversons pas, ne le synchronisons pas et ne le voyons pas.',
@@ -39,6 +39,7 @@ const privacy = {
       html: `      <p>Document Risk Analyzer est conçue pour avoir besoin d’un minimum de vos données. Voici tout ce qui transite par l’app :</p>
       <ul>
         <li><strong>Le contenu du document que vous fournissez</strong> : un fichier que vous importez, un texte que vous collez ou une page que vous photographiez. L’app l’envoie en HTTPS à notre serveur, qui en extrait le texte (par reconnaissance de texte pour les photos) et repère les identifiants personnels.</li>
+        <li><strong>Noms, adresses et numéros d’identification que vous demandez de masquer</strong> — éléments que vous saisissez dans l’app. Ils sont envoyés en HTTPS à notre serveur avec votre document afin qu’il les masque, et servent uniquement à cette requête. Votre liste enregistrée reste sur votre téléphone.</li>
         <li><strong>Texte d’analyse masqué</strong> : après le masquage, le reste du texte du document est envoyé à Groq, un service d’IA tiers, pour générer votre rapport de risques, et seulement après que vous en avez donné l’autorisation dans l’app.</li>
         <li><strong>Historique local</strong> : les analyses passées sont enregistrées dans le stockage de votre propre appareil afin que vous puissiez les consulter à nouveau. Elles ne quittent jamais votre téléphone.</li>
         <li><strong>Données publicitaires</strong> : si une publicité s’affiche pendant l’analyse de votre document, Google AdMob peut collecter des données limitées sur l’appareil et les interactions. Détails ci-dessous.</li>
@@ -47,13 +48,15 @@ const privacy = {
     },
     redaction: {
       h2: 'Comment fonctionne le masquage',
-      html: `      <p>Avant que le texte d’un document n’atteigne un modèle d’IA, notre serveur l’analyse pour repérer les identifiants personnels (adresses e-mail, numéros de téléphone, numéros de sécurité sociale et motifs similaires, ainsi que les noms de personnes lorsque sa détection de noms les reconnaît) et les remplace par des marqueurs. Cela se fait automatiquement, pour chaque document, sans possibilité de le désactiver. La détection des noms est faite au mieux et peut en manquer : considérez le masquage comme une protection, pas comme une garantie.</p>
+      html: `      <p>Avant que le texte d’un document n’atteigne un modèle d’IA, notre serveur l’analyse pour repérer les identifiants personnels (adresses e-mail, numéros de téléphone, numéros de sécurité sociale et motifs similaires, ainsi que les noms de personnes lorsque sa détection de noms les reconnaît) et les remplace par des marqueurs. Cela se fait automatiquement pour chaque document. Le seul moyen de l’arrêter est l’interrupteur « Masquer uniquement ce que j’indique », que vous devez activer vous-même pour une session ; l’app vous indique alors, sur l’écran de vérification, que rien d’autre n’a été masqué. La détection des noms est faite au mieux et peut en manquer : considérez le masquage comme une protection, pas comme une garantie.</p>
+      <p>Vous pouvez aussi indiquer à l’app quels noms, adresses ou numéros d’identification masquer : ceux que vous enregistrez dans « Vos informations » (conservés uniquement sur votre téléphone), ceux que vous ajoutez pour une session et ceux que vous saisissez sur l’écran de vérification. Ils sont envoyés à notre serveur avec votre document ou le texte de la vérification, servent uniquement à repérer et remplacer ces mots exacts, et sont remplacés par des marqueurs comme [HIDDEN 1] avant que quoi que ce soit n’atteigne un modèle d’IA. Nous ne les conservons pas et ne les journalisons pas, et ils ne sont pas envoyés à Groq.</p>
       <p class="muted">L’écran de vérification vous montre exactement ce qui a été trouvé et masqué avant que vous ne choisissiez de continuer, pour que vous voyiez ce qui est retiré plutôt que de nous croire sur parole.</p>`,
     },
     'not-stored': {
       h2: 'Ce que nous ne conservons pas',
       html: `      <ul>
         <li>Nous ne conservons ni vos documents importés, ni le texte collé, ni les photographies une fois votre rapport généré.</li>
+        <li>Nous ne conservons pas les noms, adresses ni numéros d’identification que vous demandez de masquer ; ils servent uniquement à cette requête et ne sont pas journalisés.</li>
         <li>Groq ne conserve pas le texte que nous lui envoyons : la rétention zéro des données est activée sur notre compte.</li>
         <li>Nous ne créons pas de comptes utilisateur ; nous ne détenons donc ni identifiants de connexion, ni noms d’utilisateur, ni profils permanents vous concernant.</li>
         <li>Nous ne vendons vos données à personne, pour aucune raison.</li>

@@ -8,7 +8,7 @@ const privacy = {
   eyebrow: 'Política de privacidad',
   appName,
   effective: 'En vigor desde el',
-  date: '31 de octubre de 2026',
+  date: '12 de noviembre de 2026',
   translationNote: note,
   appliesTo: 'Se aplica a Document Risk Analyzer en iOS y Android.',
   disclaimer: 'Esta página describe las prácticas reales de datos de Document Risk Analyzer a la fecha indicada arriba. Se ofrece por transparencia y para cumplir con las tiendas de aplicaciones, y no sustituye el asesoramiento jurídico independiente.',
@@ -26,7 +26,7 @@ const privacy = {
   },
   summaryLabel: 'En resumen',
   summary: [
-    'Tu documento se analiza automáticamente en busca de identificadores personales antes de enviar nada para el análisis con IA. Los correos electrónicos, números de teléfono, números de seguridad social y patrones similares se sustituyen, y los nombres también cuando se detectan. La detección no es perfecta, por eso ves una vista previa de exactamente lo que se enviará.',
+    'Tu documento se analiza automáticamente en busca de identificadores personales antes de enviar nada para el análisis con IA. Los correos electrónicos, números de teléfono, números de seguridad social y patrones similares se sustituyen, y los nombres también cuando se detectan. La detección no es perfecta, por eso ves una vista previa de exactamente lo que se enviará. También puedes añadir nombres, direcciones o números para que la app los oculte, y puedes desactivar la detección automática; la app te avisa si lo haces.',
     'El texto con los datos ocultos se envía a Groq, un servicio de IA de terceros, para redactar tu análisis, y solo después de que toques Permitir en la app. Hemos activado el ajuste de retención cero de datos de Groq, así que Groq no lo almacena.',
     'No almacenamos tus documentos. El texto y las imágenes se procesan en cada solicitud y se descartan en cuanto se devuelve tu informe.',
     'El historial de tus análisis vive solo en tu dispositivo. No lo subimos, no lo sincronizamos y no lo vemos.',
@@ -39,6 +39,7 @@ const privacy = {
       html: `      <p>Document Risk Analyzer está diseñada para necesitar la menor cantidad posible de tus datos. Esto es todo lo que pasa por la app:</p>
       <ul>
         <li><strong>El contenido del documento que aportas</strong>: un archivo que subes, un texto que pegas o una página que fotografías. La app lo envía por HTTPS a nuestro servidor, que extrae el texto (con reconocimiento de texto en el caso de las fotos) y localiza los identificadores personales.</li>
+        <li><strong>Nombres, direcciones y números de identificación que pides ocultar</strong> — elementos que escribes en la app. Se envían por HTTPS a nuestro servidor junto con tu documento para que los oculte y se usan solo para esa solicitud. Tu lista guardada permanece en tu teléfono.</li>
         <li><strong>Texto de análisis con los datos ocultos</strong>: tras la ocultación, el resto del texto del documento se envía a Groq, un servicio de IA de terceros, para generar tu informe de riesgos, y solo después de que des tu permiso en la app.</li>
         <li><strong>Historial local</strong>: los análisis anteriores se guardan en el almacenamiento de tu propio dispositivo para que puedas consultarlos de nuevo. Nunca salen de tu teléfono.</li>
         <li><strong>Datos publicitarios</strong>: si se muestra un anuncio mientras se analiza tu documento, Google AdMob puede recopilar datos limitados del dispositivo y de la interacción. Más detalles abajo.</li>
@@ -47,13 +48,15 @@ const privacy = {
     },
     redaction: {
       h2: 'Cómo funciona la ocultación de datos',
-      html: `      <p>Antes de que el texto de un documento llegue a un modelo de IA, nuestro servidor lo analiza en busca de identificadores personales (direcciones de correo electrónico, números de teléfono, números de seguridad social y patrones similares, además de nombres de personas cuando su detección de nombres los reconoce) y los sustituye por marcadores. Esto ocurre automáticamente, en todos los documentos, y no hay ningún ajuste para desactivarlo. La detección de nombres es de mejor esfuerzo y puede pasar por alto nombres, así que considera la ocultación una medida de protección y no una garantía.</p>
+      html: `      <p>Antes de que el texto de un documento llegue a un modelo de IA, nuestro servidor lo analiza en busca de identificadores personales (direcciones de correo electrónico, números de teléfono, números de seguridad social y patrones similares, además de nombres de personas cuando su detección de nombres los reconoce) y los sustituye por marcadores. Esto ocurre automáticamente en todos los documentos. La única forma de detenerlo es el interruptor «Ocultar solo lo que yo indique», que tienes que activar tú para una sesión; la app te avisa entonces, en la pantalla de revisión, de que no se ocultó nada más. La detección de nombres es de mejor esfuerzo y puede pasar por alto nombres, así que considera la ocultación una medida de protección y no una garantía.</p>
+      <p>También puedes indicar a la app qué nombres, direcciones o números de identificación ocultar: los que guardes en «Tus datos» (se conservan solo en tu teléfono), los que añadas para una sesión y los que escribas en la pantalla de revisión. Se envían a nuestro servidor junto con tu documento o con el texto de la revisión, se usan solo para encontrar y sustituir esas palabras exactas y se reemplazan por marcadores como [HIDDEN 1] antes de que nada llegue a un modelo de IA. No los almacenamos ni los registramos, y no se envían a Groq.</p>
       <p class="muted">La pantalla de revisión te muestra exactamente lo que se encontró y se ocultó antes de que decidas continuar, para que veas qué se elimina en lugar de fiarte de nuestra palabra.</p>`,
     },
     'not-stored': {
       h2: 'Qué no almacenamos',
       html: `      <ul>
         <li>No conservamos tus documentos subidos, el texto pegado ni las fotografías una vez generado tu informe.</li>
+        <li>No conservamos los nombres, direcciones ni números de identificación que pides ocultar; se usan solo para esa solicitud y no se registran.</li>
         <li>Groq no almacena el texto que le enviamos: la retención cero de datos está activada en nuestra cuenta.</li>
         <li>No creamos cuentas de usuario, por lo que no guardamos credenciales de acceso, nombres de usuario ni perfiles permanentes asociados a ti.</li>
         <li>No vendemos tus datos a nadie, por ningún motivo.</li>

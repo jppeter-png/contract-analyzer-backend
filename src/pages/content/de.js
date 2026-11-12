@@ -8,7 +8,7 @@ const privacy = {
   eyebrow: 'Datenschutzerklärung',
   appName,
   effective: 'Gültig ab',
-  date: '31. Oktober 2026',
+  date: '12. November 2026',
   translationNote: note,
   appliesTo: 'Gilt für Document Risk Analyzer auf iOS und Android.',
   disclaimer: 'Diese Seite beschreibt die tatsächliche Datenverarbeitung von Document Risk Analyzer zum oben genannten Datum. Sie dient der Transparenz und der Einhaltung der Vorgaben der App-Stores und ersetzt keine unabhängige Rechtsberatung.',
@@ -26,7 +26,7 @@ const privacy = {
   },
   summaryLabel: 'Kurz gesagt',
   summary: [
-    'Ihr Dokument wird automatisch auf persönliche Kennungen durchsucht, bevor irgendetwas zur KI-Analyse gesendet wird. E-Mail-Adressen, Telefonnummern, Sozialversicherungsnummern und ähnliche Muster werden ersetzt, ebenso Namen, sofern sie erkannt werden. Die Erkennung ist nicht perfekt, deshalb sehen Sie eine Vorschau dessen, was genau gesendet wird.',
+    'Ihr Dokument wird automatisch auf persönliche Kennungen durchsucht, bevor irgendetwas zur KI-Analyse gesendet wird. E-Mail-Adressen, Telefonnummern, Sozialversicherungsnummern und ähnliche Muster werden ersetzt, ebenso Namen, sofern sie erkannt werden. Die Erkennung ist nicht perfekt, deshalb sehen Sie eine Vorschau dessen, was genau gesendet wird. Sie können außerdem Namen, Adressen oder Nummern hinzufügen, die ausgeblendet werden sollen, und die automatische Erkennung ausschalten; die App warnt Sie dann.',
     'Der geschwärzte Text wird an Groq, einen KI-Dienst eines Drittanbieters, gesendet, um Ihre Analyse zu erstellen – und zwar erst, nachdem Sie in der App auf „Erlauben“ getippt haben. Wir haben die Einstellung „Zero Data Retention“ von Groq aktiviert, sodass Groq den Text nicht speichert.',
     'Wir speichern Ihre Dokumente nicht. Texte und Bilder werden pro Anfrage verarbeitet und verworfen, sobald Ihr Bericht zurückgegeben wurde.',
     'Ihr Analyseverlauf bleibt ausschließlich auf Ihrem Gerät. Wir laden ihn nicht hoch, synchronisieren ihn nicht und sehen ihn nicht.',
@@ -39,6 +39,7 @@ const privacy = {
       html: `      <p>Document Risk Analyzer ist so gebaut, dass möglichst wenige Ihrer Daten benötigt werden. Das ist alles, was durch die App läuft:</p>
       <ul>
         <li><strong>Dokumentinhalt, den Sie bereitstellen</strong> – eine Datei, die Sie hochladen, ein Text, den Sie einfügen, oder eine Seite, die Sie fotografieren. Die App sendet ihn per HTTPS an unseren Server, der den Text extrahiert (bei Fotos mithilfe von Texterkennung) und persönliche Kennungen ermittelt.</li>
+        <li><strong>Namen, Adressen und Ausweisnummern, die Sie ausblenden lassen</strong> – Einträge, die Sie in die App tippen. Sie werden per HTTPS zusammen mit Ihrem Dokument an unseren Server gesendet, damit er sie ausblendet, und nur für diese Anfrage verwendet. Ihre gespeicherte Liste bleibt auf Ihrem Telefon.</li>
         <li><strong>Geschwärzter Analysetext</strong> – nach der Schwärzung wird der verbleibende Dokumenttext an Groq, einen KI-Dienst eines Drittanbieters, gesendet, um Ihren Risikobericht zu erstellen – erst nachdem Sie in der App Ihre Erlaubnis erteilt haben.</li>
         <li><strong>Lokaler Verlauf</strong> – frühere Analysen werden im Speicher Ihres eigenen Geräts abgelegt, damit Sie sie erneut ansehen können. Dieser Verlauf verlässt Ihr Telefon nie.</li>
         <li><strong>Werbedaten</strong> – wenn während der Analyse Ihres Dokuments eine Anzeige erscheint, kann Google AdMob begrenzte Geräte- und Interaktionsdaten erfassen. Details unten.</li>
@@ -47,13 +48,15 @@ const privacy = {
     },
     redaction: {
       h2: 'So funktioniert die Schwärzung',
-      html: `      <p>Bevor Dokumenttext ein KI-Modell erreicht, durchsucht unser Server ihn nach persönlichen Kennungen – E-Mail-Adressen, Telefonnummern, Sozialversicherungsnummern und ähnlichen Mustern sowie Personennamen, soweit die Namenserkennung sie findet – und ersetzt sie durch Platzhalter. Das geschieht automatisch bei jedem Dokument, und es gibt keine Einstellung, um es abzuschalten. Die Namenserkennung arbeitet nach bestem Bemühen und kann Namen übersehen; betrachten Sie die Schwärzung daher als Schutzmaßnahme, nicht als Garantie.</p>
+      html: `      <p>Bevor Dokumenttext ein KI-Modell erreicht, durchsucht unser Server ihn nach persönlichen Kennungen – E-Mail-Adressen, Telefonnummern, Sozialversicherungsnummern und ähnlichen Mustern sowie Personennamen, soweit die Namenserkennung sie findet – und ersetzt sie durch Platzhalter. Das geschieht automatisch bei jedem Dokument. Es lässt sich nur über den Schalter „Nur meine Einträge ausblenden“ stoppen, den Sie selbst für eine Sitzung einschalten müssen; die App weist Sie dann auf dem Prüfbildschirm darauf hin, dass sonst nichts ausgeblendet wurde. Die Namenserkennung arbeitet nach bestem Bemühen und kann Namen übersehen; betrachten Sie die Schwärzung daher als Schutzmaßnahme, nicht als Garantie.</p>
+      <p>Sie können der App außerdem mitteilen, welche Namen, Adressen oder Ausweisnummern ausgeblendet werden sollen: Einträge, die Sie unter „Ihre Angaben“ speichern (nur auf Ihrem Telefon gespeichert), Einträge, die Sie für eine Sitzung hinzufügen, und alles, was Sie auf dem Prüfbildschirm eintippen. Sie werden zusammen mit Ihrem Dokument oder dem Prüftext an unseren Server gesendet, dienen nur dazu, genau diese Wörter zu finden und zu ersetzen, und werden durch Platzhalter wie [HIDDEN 1] ersetzt, bevor irgendetwas ein KI-Modell erreicht. Wir speichern oder protokollieren sie nicht, und sie werden nicht an Groq gesendet.</p>
       <p class="muted">Der Prüfbildschirm zeigt Ihnen genau, was gefunden und geschwärzt wurde, bevor Sie fortfahren – so sehen Sie, was entfernt wird, statt uns einfach zu glauben.</p>`,
     },
     'not-stored': {
       h2: 'Was wir nicht speichern',
       html: `      <ul>
         <li>Wir bewahren Ihre hochgeladenen Dokumente, eingefügten Texte oder Fotos nach der Erstellung Ihres Berichts nicht auf.</li>
+        <li>Wir bewahren die Namen, Adressen und Ausweisnummern, die Sie ausblenden lassen, nicht auf; sie werden nur für diese Anfrage verwendet und nicht protokolliert.</li>
         <li>Groq speichert den Text, den wir senden, nicht: Zero Data Retention ist für unser Konto aktiviert.</li>
         <li>Wir legen keine Benutzerkonten an und halten daher keine Anmeldedaten, Benutzernamen oder dauerhaften Profile, die Ihnen zugeordnet wären.</li>
         <li>Wir verkaufen Ihre Daten an niemanden, aus keinem Grund.</li>

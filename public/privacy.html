@@ -318,7 +318,7 @@
       <span class="eyebrow">Privacy Policy</span>
       <h1>Document Risk Analyzer</h1>
       <div class="masthead-meta">
-        <span>Effective <strong>October 31, 2026</strong></span>
+        <span>Effective <strong>November 12, 2026</strong></span>
       </div>
     </div>
   </div>
@@ -342,7 +342,7 @@
     <div class="summary">
       <span class="eyebrow">In short</span>
       <ul>
-        <li>Your document is automatically scanned for personal identifiers before anything is sent for AI analysis. Emails, phone numbers, SSNs, and similar patterns are replaced, and names are replaced where detected. Detection isn't perfect, so you see a preview of exactly what will be sent.</li>
+        <li>Your document is automatically scanned for personal identifiers before anything is sent for AI analysis. Emails, phone numbers, SSNs, and similar patterns are replaced, and names are replaced where detected. Detection isn't perfect, so you see a preview of exactly what will be sent. You can also add names, addresses, or numbers for the app to hide, and you can turn automatic detection off; the app warns you if you do.</li>
         <li>The redacted text is sent to Groq, a third-party AI service, to write your analysis — and only after you tap Allow in the app. We've turned on Groq's zero-data-retention setting, so Groq doesn't store it.</li>
         <li>We don't store your documents. Text and images are processed per request and discarded once your report is returned.</li>
         <li>Your analysis history lives only on your device. We don't upload it, sync it, or see it.</li>
@@ -356,6 +356,7 @@
       <p>Document Risk Analyzer is built to need as little of your data as possible. Here's everything that passes through the app:</p>
       <ul>
         <li><strong>Document content you provide</strong> — a file you upload, text you paste, or a page you photograph. The app sends it over HTTPS to our server, which extracts the text (using text recognition for photos) and locates personal identifiers.</li>
+        <li><strong>Names, addresses, and ID numbers you ask us to hide</strong> — items you type into the app. They are sent over HTTPS to our server together with your document so it can hide them, and used only for that request. Your saved list stays on your phone.</li>
         <li><strong>Redacted analysis text</strong> — after redaction, the remaining document text is sent to Groq, a third-party AI service, to generate your risk report — only after you give permission in the app.</li>
         <li><strong>Local history</strong> — past analyses are saved on your device's own storage so you can revisit them. This never leaves your phone.</li>
         <li><strong>Advertising data</strong> — if an ad is shown while your document is analyzed, Google AdMob may collect limited device and interaction data. Details below.</li>
@@ -365,7 +366,8 @@
 
     <section class="policy-section" id="redaction">
       <h2>How Redaction Works</h2>
-      <p>Before any document text reaches an AI model, our server scans it for personal identifiers — email addresses, phone numbers, Social Security numbers, and similar patterns, plus person names where its name detection recognizes them — and replaces them with placeholders. This happens automatically, on every document, with no setting to turn it off. Name detection is best-effort and can miss names, so treat redaction as a safeguard, not a guarantee.</p>
+      <p>Before any document text reaches an AI model, our server scans it for personal identifiers — email addresses, phone numbers, Social Security numbers, and similar patterns, plus person names where its name detection recognizes them — and replaces them with placeholders. This happens automatically on every document. The only way to stop it is the “Only hide the items I list” switch, which you have to turn on yourself for a session; the app then tells you on the review screen that nothing else was hidden. Name detection is best-effort and can miss names, so treat redaction as a safeguard, not a guarantee.</p>
+      <p>You can also tell the app which names, addresses, or ID numbers to hide: items you save under “Your details” (kept only on your phone), items you add for a session, and anything you type on the review screen. They are sent to our server with your document or review text, used only to find and replace those exact words, and replaced with placeholders like [HIDDEN 1] before anything reaches an AI model. We do not store or log them, and they are not sent to Groq.</p>
       <p class="muted">The review screen shows you exactly what was found and redacted before you choose to continue, so you can see what's being removed rather than take our word for it.</p>
     </section>
 
@@ -373,6 +375,7 @@
       <h2>What We Don't Store</h2>
       <ul>
         <li>We do not retain your uploaded documents, pasted text, or photographs after your report is generated.</li>
+        <li>We do not retain the names, addresses, or ID numbers you ask us to hide; they are used for that request only and are not logged.</li>
         <li>Groq does not store the text we send it: Zero Data Retention is enabled on our account.</li>
         <li>We do not create user accounts, so we hold no login credentials, usernames, or persistent profiles tied to you.</li>
         <li>We do not sell your data to anyone, for any reason.</li>
@@ -452,7 +455,7 @@
 
     <footer>
       <div class="contact"><a href="mailto:contractanalyzer@icloud.com">contractanalyzer@icloud.com</a></div>
-      <div>Effective October 31, 2026 · Applies to Document Risk Analyzer on iOS and Android.</div>
+      <div>Effective November 12, 2026 · Applies to Document Risk Analyzer on iOS and Android.</div>
       <div class="disclaimer">This page describes Document Risk Analyzer's actual data practices as of the effective date above. It's provided for transparency and app store compliance and isn't a substitute for independent legal advice.</div>
     </footer>
   </main>
