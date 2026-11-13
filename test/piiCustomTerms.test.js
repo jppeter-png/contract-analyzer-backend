@@ -88,6 +88,36 @@ describe('custom terms: scrubPII', () => {
   });
 });
 
+describe('custom terms: accents', () => {
+  test('a term typed without accents finds the accented name, and the other way round', () => {
+    const { scrubbed } = scrubPII('José García signed. JOSE GARCIA did not. Jose Garcia too.', { customTerms: ['Jose Garcia'], autoDetect: false });
+    expect(scrubbed).toBe('[HIDDEN 1] signed. [HIDDEN 1] did not. [HIDDEN 1] too.');
+    const back = scrubPII('Jose Garcia signed. José García too.', { customTerms: ['José García'], autoDetect: false });
+    expect(back.scrubbed).toBe('[HIDDEN 1] signed. [HIDDEN 1] too.');
+  });
+
+  test('a name written with combining accents is hidden whole, with no stray accent left', () => {
+    const decomposed = 'Jose\u0301 signed.';
+    expect(scrubPII(decomposed, { customTerms: ['José'], autoDetect: false }).scrubbed).toBe('[HIDDEN 1] signed.');
+    expect(scrubPII('José signed.', { customTerms: ['Jose\u0301'], autoDetect: false }).scrubbed).toBe('[HIDDEN 1] signed.');
+  });
+
+  test('positions stay right in text with accents and emoji before the match', () => {
+    const { scrubbed } = scrubPII('Café 🏠 señor Núñez, Ellis.', { customTerms: ['Nunez', 'Ellis'], autoDetect: false });
+    expect(scrubbed).toBe('Café 🏠 señor [HIDDEN 1], [HIDDEN 2].');
+  });
+
+  test('whole-word matching still holds once accents are ignored', () => {
+    const { scrubbed } = scrubPII('Garcia and Garcíamarquez', { customTerms: ['garcía'], autoDetect: false });
+    expect(scrubbed).toBe('[HIDDEN 1] and Garcíamarquez');
+  });
+
+  test('Korean and Chinese names are still found', () => {
+    expect(scrubPII('임대인 김철수는 서명했다', { customTerms: ['김철수'], autoDetect: false }).scrubbed).toBe('임대인 [HIDDEN 1]는 서명했다');
+    expect(scrubPII('出租人张伟先生', { customTerms: ['张伟'], autoDetect: false }).scrubbed).toBe('出租人[HIDDEN 1]先生');
+  });
+});
+
 describe('custom terms: protecting earlier placeholders', () => {
   test('a term that looks like part of a placeholder never changes one', () => {
     const { scrubbed, termMatches } = scrubPII('[NAME 1] and [HIDDEN 12] met NAME and 12 times.', {

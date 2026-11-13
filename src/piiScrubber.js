@@ -132,18 +132,49 @@ function termRegex(term) {
 // Placeholders from an earlier pass ([NAME 1], [HIDDEN 2]) are never matched, so a term like "NAME" cannot corrupt one.
 const PLACEHOLDER = /\[[A-Z]{2,10}(?: \d+)?\]/g;
 
+const stripMarks = value => value.normalize('NFD').replace(/\p{M}/gu, '');
+
+/**
+ * The text with accents removed, plus a map from each position in it back to the original, so "José"
+ * and "Jose" are the same word. Plain ASCII text needs no work.
+ */
+function foldText(text) {
+  if (!/[^\x00-\x7f]/.test(text)) return { folded: text, map: null };
+  const pieces = [];
+  const map = [];
+  for (let i = 0; i < text.length;) {
+    const ch = String.fromCodePoint(text.codePointAt(i));
+    const kept = stripMarks(ch);
+    for (let k = 0; k < kept.length; k++) map.push(i);
+    pieces.push(kept);
+    i += ch.length;
+  }
+  return { folded: pieces.join(''), map };
+}
+
 function findCustom(text, terms) {
+  const { folded, map } = foldText(text);
+  // Back to positions in the original text; a match swallows the accents that trail its last letter.
+  const toOriginal = (start, end) => {
+    if (!map) return [start, end];
+    const last = map[end - 1];
+    let stop = last + (text.codePointAt(last) > 0xffff ? 2 : 1);
+    while (stop < text.length && /\p{M}/u.test(text[stop])) stop += 1;
+    return [map[start], stop];
+  };
   const protectedRanges = [...text.matchAll(PLACEHOLDER)].map(m => [m.index, m.index + m[0].length]);
   const inPlaceholder = (start, end) => protectedRanges.some(([a, b]) => start < b && end > a);
   const spans = [];
   const matchCounts = terms.map((term, termIndex) => {
-    const re = termRegex(term);
+    const re = termRegex(stripMarks(term));
     let count = 0;
     if (re) {
-      for (const m of text.matchAll(re)) {
-        if (!m[0] || (protectedRanges.length && inPlaceholder(m.index, m.index + m[0].length))) continue;
+      for (const m of folded.matchAll(re)) {
+        if (!m[0]) continue;
+        const [start, end] = toOriginal(m.index, m.index + m[0].length);
+        if (protectedRanges.length && inPlaceholder(start, end)) continue;
         count += 1;
-        spans.push({ start: m.index, end: m.index + m[0].length, label: CUSTOM, tag: '[HIDDEN]', priority: CUSTOM_PRIORITY, termIndex });
+        spans.push({ start, end, label: CUSTOM, tag: '[HIDDEN]', priority: CUSTOM_PRIORITY, termIndex });
       }
     }
     return { term, count };
@@ -160,10 +191,10 @@ function highestHiddenNumber(text) {
 
 /** Same person or place written several ways ("Jordan Ellis", "Ellis") shares one number. */
 function customTagger(text, spans) {
-  const customSpans = spans.filter(s => s.label === CUSTOM);
-  const numbers = groupNames(customSpans.map(s => text.slice(s.start, s.end)));
+  const valueOf = span => stripMarks(text.slice(span.start, span.end));
+  const numbers = groupNames(spans.filter(s => s.label === CUSTOM).map(valueOf));
   const base = highestHiddenNumber(text);
-  return span => `[HIDDEN ${base + numbers.get(text.slice(span.start, span.end))}]`;
+  return span => `[HIDDEN ${base + numbers.get(valueOf(span))}]`;
 }
 
 /**
